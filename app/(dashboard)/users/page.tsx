@@ -1,3 +1,7 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Users" };
+
 import Container from "@/components/Container";
 import React from "react";
 import PaginationControls from "@/components/PaginationControls";

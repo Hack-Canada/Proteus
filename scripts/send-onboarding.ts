@@ -10,6 +10,7 @@
  *   tsx scripts/send-onboarding.ts                                  # uses process env as-is
  */
 
+import { hackathonYear } from "../config/site";
 import * as fs from "fs";
 import * as path from "path";
 import * as readline from "readline";
@@ -223,7 +224,7 @@ const main = async () => {
   console.log(`✓ Render check passed (${testHtml.length} chars)\n`);
 
   // ── Send ──────────────────────────────────────────────────────────────
-  const subject = "Important Links and Information for Hack Canada 2026";
+  const subject = `Important Links and Information for Hack Canada ${hackathonYear}`;
   let successCount = 0;
   let failureCount = 0;
   const failed: string[] = [];

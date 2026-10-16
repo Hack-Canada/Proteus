@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Eye, Loader2, Mail, Send, Settings } from "lucide-react";
+import { hackathonYear } from "@/config/site";
 
 const EMAIL_TEMPLATES = [
   {
@@ -48,7 +49,7 @@ const EMAIL_TEMPLATES = [
     name: "Hacker Information Email",
     description:
       "Sent to accepted hackers with important links (Schedule, Discord, Devpost, Hacker Package).",
-    subject: "Important Links and Information for Hack Canada 2026",
+    subject: `Important Links and Information for Hack Canada ${hackathonYear}`,
     needsUserId: true,
   },
   {

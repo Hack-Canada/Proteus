@@ -557,3 +557,22 @@ export const shopPurchases = pgTable("shopPurchase", {
 
 export type ShopPurchase = typeof shopPurchases.$inferSelect;
 export type NewShopPurchase = typeof shopPurchases.$inferInsert;
+
+export const eventConfig = pgTable("eventConfig", {
+  id: text("id").primaryKey(),
+  phase: text("phase"),
+  registrationOpen: timestamp("registrationOpen", {
+    withTimezone: true,
+  }).notNull(),
+  registrationClose: timestamp("registrationClose", {
+    withTimezone: true,
+  }).notNull(),
+  eventStart: timestamp("eventStart", { withTimezone: true }).notNull(),
+  eventEnd: timestamp("eventEnd", { withTimezone: true }).notNull(),
+  updatedAt: timestamp("updatedAt")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
+export type EventConfig = typeof eventConfig.$inferSelect;
+export type NewEventConfig = typeof eventConfig.$inferInsert;

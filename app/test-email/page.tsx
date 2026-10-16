@@ -1,9 +1,11 @@
 import { getCurrentUser } from "@/auth";
 import AcceptanceEmail from "@/components/Emails/AcceptanceEmail";
 import { render } from "@react-email/render";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 const page = async () => {
+  if (process.env.NODE_ENV !== "development") notFound();
+
   const user = await getCurrentUser();
 
   if (!user || user.role !== "admin") {

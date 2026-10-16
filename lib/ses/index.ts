@@ -8,6 +8,7 @@ import HackathonPrepEmail from "@/components/Emails/HackathonPrepEmail";
 import { SES } from "@aws-sdk/client-ses";
 import { render } from "@react-email/render";
 import RSVPReminder from "@/components/Emails/RSVPReminder";
+import { hackathonYear } from "@/config/site";
 
 const ses = new SES({
   region: process.env.AWS_SES_REGION,
@@ -185,7 +186,7 @@ export const sendOnboardingEmail = async (
           },
           Subject: {
             Charset: "UTF-8",
-            Data: "Important Links and Information for Hack Canada 2026",
+            Data: `Important Links and Information for Hack Canada ${hackathonYear}`,
           },
         },
       };

@@ -34,7 +34,7 @@ const UserProfile = ({ isMinimized }: UserProfileProps) => {
           <Image
             src="/default-avatar.webp"
             alt="User avatar"
-            className="bg-white object-cover dark:bg-gray-800"
+            className="bg-muted object-cover"
             fill
             sizes="(max-width: 40px) 40px"
             priority

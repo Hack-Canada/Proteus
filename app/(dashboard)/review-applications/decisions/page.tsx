@@ -1,3 +1,7 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Decisions" };
+
 import { getCurrentUser } from "@/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";

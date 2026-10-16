@@ -21,7 +21,9 @@ const config = {
       screens: {
         xs: "475px",
       },
-      fontFamily: {},
+      fontFamily: {
+        display: ["var(--font-londrina)", "sans-serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

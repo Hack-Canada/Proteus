@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { REVIEWS_PER_APP } from "@/lib/constants";
 import { Clock, Eye, MapPin, ScrollText } from "lucide-react";
 
 const ReviewGuidelines = () => {
@@ -23,8 +24,8 @@ const ReviewGuidelines = () => {
             Review Process
           </h3>
           <p className="text-muted-foreground">
-            Review applications thoroughly and fairly. Each application requires
-            five independent reviews before a decision can be made.
+            Review applications thoroughly and fairly. Each application requires{" "}
+            {REVIEWS_PER_APP} independent reviews before a decision can be made.
           </p>
         </div>
 

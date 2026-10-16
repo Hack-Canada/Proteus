@@ -1,3 +1,7 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Review" };
+
 import { getCurrentUser } from "@/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
@@ -11,6 +15,7 @@ import Container from "@/components/Container";
 import PageBanner from "@/components/PageBanner";
 import { Trophy } from "lucide-react";
 import ReviewGuidelines from "@/components/review/ReviewGuidelines";
+import { MAX_REVIEW_LIMIT, REVIEWS_PER_APP } from "@/lib/constants";
 
 interface SystemStatus {
   pendingReviews: number;
@@ -18,9 +23,6 @@ interface SystemStatus {
   userReviewCount: number;
   canReviewMore: boolean;
 }
-
-const MIN_REVIEW_LIMIT = 50;
-const MAX_REVIEW_LIMIT = Math.ceil(MIN_REVIEW_LIMIT * 3.5);
 
 export default async function ReviewApplicationsPage() {
   const user = await getCurrentUser();
@@ -35,14 +37,14 @@ export default async function ReviewApplicationsPage() {
       .select({
         pendingReviews: sql<number>`
           COUNT(DISTINCT CASE
-            WHEN ${hackerApplications.reviewCount} < 5
+            WHEN ${hackerApplications.reviewCount} < ${REVIEWS_PER_APP}
             AND ${hackerApplications.submissionStatus} = 'submitted'
             AND ${hackerApplications.internalResult} = 'pending'
             THEN ${hackerApplications.id}
           END)`,
         finishedReviews: sql<number>`
           COUNT(DISTINCT CASE
-            WHEN ${hackerApplications.reviewCount} = 5
+            WHEN ${hackerApplications.reviewCount} = ${REVIEWS_PER_APP}
             THEN ${hackerApplications.id}
           END)`,
       })
@@ -68,14 +70,13 @@ export default async function ReviewApplicationsPage() {
     <Container className="space-y-6 md:space-y-10">
       <PageBanner
         heading="Review Applications"
-        subheading="Review submitted applications. Each application requires five independent reviews for a decision."
+        subheading={`Review submitted applications. Each application requires ${REVIEWS_PER_APP} independent reviews for a decision.`}
       />
 
       <div className="space-y-4 md:space-y-6 lg:space-y-8">
         <div className="flex flex-col gap-4 md:gap-6 lg:gap-8 xl:flex-row-reverse">
           <ReviewGuidelines />
-          <div className="group relative flex min-h-28 w-full flex-1 overflow-hidden rounded-[6px] p-1 shadow-[0px_0px_0x_white] transition-shadow delay-200 duration-500 ease-in hover:shadow-[-12px_0px_32px_#ec6aff77,12px_0px_32px_#00d3f477] xl:w-1/3">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-fuchsia-400" />
+          <div className="group relative flex min-h-28 w-full flex-1 overflow-hidden rounded-3xl xl:w-1/3">
             <Link
               href={
                 status.pendingReviews > 0 && status.canReviewMore
@@ -83,12 +84,12 @@ export default async function ReviewApplicationsPage() {
                   : ""
               }
               className={cn(
-                "relative flex w-full items-center justify-center rounded-[6px] border-white/50 bg-white/50 backdrop-blur-sm transition-all duration-500 hover:border-white/80 hover:bg-white/60 hover:shadow-md",
+                "relative flex w-full items-center justify-center rounded-3xl bg-gradient-to-b from-[#5f9be2] via-[#3c7bcc] to-[#1c58a1] p-6 text-white transition-transform duration-500 ease-out hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary",
                 (!status.canReviewMore || status.pendingReviews === 0) &&
-                  "cursor-not-allowed opacity-50 hover:shadow-none hover:before:scale-x-0 hover:after:opacity-0",
+                  "cursor-not-allowed opacity-50 hover:translate-y-0",
               )}
             >
-              <span className="text-center text-xl font-semibold tracking-wider text-black xl:w-36 xl:text-2xl 2xl:w-52 2xl:text-3xl">
+              <span className="text-center font-display text-3xl leading-none xl:w-36 2xl:w-52 2xl:text-4xl">
                 {!status.canReviewMore
                   ? "Review Limit Reached"
                   : status.pendingReviews === 0
@@ -101,7 +102,7 @@ export default async function ReviewApplicationsPage() {
 
         <Link
           href="/reviewers/leaderboards"
-          className="flex h-12 w-full items-center justify-center rounded-md border-2 border-primary/50 bg-primary/5 font-medium tracking-wider text-sky-500 transition duration-300 hover:border-primary hover:bg-primary/15 hover:text-sky-600 dark:text-blue-400 dark:hover:text-blue-300 md:h-14 md:text-lg xl:h-16 xl:text-xl"
+          className="flex h-12 w-full items-center justify-center rounded-full bg-primary/10 font-display text-xl text-primary transition duration-300 hover:bg-primary/20 md:h-14 md:text-2xl xl:h-16"
         >
           <Trophy className="mr-2 inline-block size-4 stroke-[3px] md:size-5" />
           Reviewer Leaderboards

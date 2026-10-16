@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   XAxis,
@@ -39,6 +41,14 @@ const reviewChartConfig = {
   count: { label: "Reviews", color: "hsl(var(--chart-1))" },
 } satisfies ChartConfig;
 
+const applicationChartConfig = {
+  count: { label: "Submitted", color: "hsl(var(--chart-2))" },
+} satisfies ChartConfig;
+
+const countryChartConfig = {
+  applicants: { label: "Applicants", color: "hsl(var(--chart-1))" },
+} satisfies ChartConfig;
+
 type StatusData = {
   status: string;
   count: number;
@@ -52,9 +62,16 @@ type ReviewTrend = {
 type Props = {
   statusData: StatusData[];
   reviewTrend: ReviewTrend[];
+  applicationTrend: ReviewTrend[];
+  countries: { country: string; applicants: number }[];
 };
 
-const DashboardCharts = ({ statusData, reviewTrend }: Props) => {
+const DashboardCharts = ({
+  statusData,
+  reviewTrend,
+  applicationTrend,
+  countries,
+}: Props) => {
   const pieData = statusData.map((d) => ({
     ...d,
     fill: statusColors[d.status] || "hsl(var(--chart-1))",
@@ -62,6 +79,29 @@ const DashboardCharts = ({ statusData, reviewTrend }: Props) => {
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
+      {applicationTrend.length > 0 && (
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">Applications over time</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={applicationChartConfig} className="h-[260px] w-full">
+              <AreaChart data={applicationTrend} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
+                <XAxis dataKey="date" tickLine={false} axisLine={false} fontSize={11} tickMargin={8} />
+                <YAxis tickLine={false} axisLine={false} fontSize={12} width={32} allowDecimals={false} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Area
+                  dataKey="count"
+                  type="monotone"
+                  fill="hsl(var(--chart-2))"
+                  stroke="hsl(var(--chart-2))"
+                  fillOpacity={0.25}
+                />
+              </AreaChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
@@ -140,6 +180,35 @@ const DashboardCharts = ({ statusData, reviewTrend }: Props) => {
                   fill="hsl(var(--chart-1))"
                   radius={[4, 4, 0, 0]}
                 />
+              </BarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {countries.length > 0 && (
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">Top countries</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer
+              config={countryChartConfig}
+              className="w-full"
+              style={{ height: Math.max(180, countries.length * 36) }}
+            >
+              <BarChart data={countries} layout="vertical" margin={{ left: 8, right: 16 }}>
+                <XAxis type="number" hide allowDecimals={false} />
+                <YAxis
+                  type="category"
+                  dataKey="country"
+                  width={120}
+                  tickLine={false}
+                  axisLine={false}
+                  fontSize={12}
+                />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="applicants" fill="hsl(var(--chart-1))" radius={8} />
               </BarChart>
             </ChartContainer>
           </CardContent>

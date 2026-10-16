@@ -59,6 +59,8 @@ export default function ReviewerHistoryTable({
                   <Link
                     className="group relative flex w-fit items-center gap-1.5"
                     href={`/applications/${review.applicationId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
                     {review.applicantName}
                     <ExternalLink size={16} />

@@ -13,7 +13,7 @@ import {
   Text,
 } from "@react-email/components";
 import { Tailwind } from "@react-email/tailwind";
-import { hackathonYear } from "@/config/site";
+import { eventDatesLabel, eventVenue, hackathonYear } from "@/config/site";
 
 type Props = { name: string };
 
@@ -164,13 +164,7 @@ const AcceptanceEmail = ({ name }: Props) => (
                       📍 WHERE
                     </strong>
                   </div>
-                  <div>
-                    SPUR Campus - Spur Innovation Center,
-                    <br />
-                    2240 University Ave,
-                    <br />
-                    Waterloo, ON N2K 0G3
-                  </div>
+                  <div>{eventVenue}</div>
                 </div>
                 <div>
                   <div style={{ marginBottom: "4px" }}>
@@ -184,7 +178,7 @@ const AcceptanceEmail = ({ name }: Props) => (
                       📅 WHEN
                     </strong>
                   </div>
-                  <div>March 6-8, 2026</div>
+                  <div>{eventDatesLabel}</div>
                 </div>
               </div>
             </Section>

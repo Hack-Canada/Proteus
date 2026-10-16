@@ -3,8 +3,8 @@ import { fredoka, rubik } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  title: "HC Admin - Authentication",
-  description: "Hack Canada Admin Dashboard Authentication",
+  title: "Sign in",
+  description: "Sign in to the Hack Canada admin dashboard",
 };
 
 export default function AuthLayout({

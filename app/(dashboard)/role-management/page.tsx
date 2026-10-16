@@ -1,3 +1,7 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Roles" };
+
 import Container from "@/components/Container";
 import AdminUsersTable from "@/components/AdminUsersTable";
 import { getAdminsAndOrganizers, getUsersByRoles } from "@/data/user";

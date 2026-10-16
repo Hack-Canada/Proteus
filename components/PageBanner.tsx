@@ -42,7 +42,7 @@ const PageBanner = ({
   return (
     <div
       className={cn(
-        "w-full rounded-xl border bg-card p-6 shadow-sm transition-all duration-200 hover:shadow-md lg:p-8",
+        "w-full rounded-3xl border bg-card p-6 shadow-sm dark:border-white/[0.06] dark:shadow-none lg:p-8",
         className,
       )}
     >
@@ -56,7 +56,7 @@ const PageBanner = ({
       )}
       <div className="space-y-3">
         {heading ? (
-          <h1 className="text-xl font-semibold text-foreground lg:text-2xl">
+          <h1 className="font-display text-3xl text-foreground lg:text-4xl">
             {heading}
           </h1>
         ) : (
@@ -65,7 +65,7 @@ const PageBanner = ({
               <div key={index} className="flex items-center">
                 <Link
                   href={breadcrumb.href}
-                  className="text-lg font-semibold capitalize text-foreground transition-colors hover:text-primary lg:text-xl"
+                  className="font-display text-2xl capitalize text-foreground transition-colors hover:text-primary lg:text-3xl"
                 >
                   {breadcrumb.label}
                 </Link>

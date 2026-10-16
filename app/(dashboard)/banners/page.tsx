@@ -1,3 +1,7 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Banners" };
+
 import { getCurrentUser } from "@/auth";
 import Container from "@/components/Container";
 import PageBanner from "@/components/PageBanner";
