@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { levelsOfStudy } from "@/config/apply";
 import { UseFormReturn } from "react-hook-form";
 
 interface LevelSelectProps {
@@ -40,11 +41,11 @@ export const LevelSelect = ({ form }: LevelSelectProps) => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                <SelectItem value="highSchool">High School</SelectItem>
-                <SelectItem value="undergraduate">Undergraduate</SelectItem>
-                <SelectItem value="graduate">Graduate</SelectItem>
-                <SelectItem value="postgraduate">Post Graduate</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+                {levelsOfStudy.map((level) => (
+                  <SelectItem key={level} value={level}>
+                    {level}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </FormControl>

@@ -12,6 +12,7 @@ import ApplicationActions from "@/components/ApplicationActions";
 import { isAdmin } from "@/lib/utils";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
+import { getTeamForUser } from "@/data/teams";
 
 const HackerPage = async (
   props: {
@@ -38,7 +39,10 @@ const HackerPage = async (
   const { hackerApplication: hacker, user: hackerUser } =
     userWithHackerApplication;
 
-  const reviews = await getApplicationReviews(hacker.id);
+  const [reviews, team] = await Promise.all([
+    getApplicationReviews(hacker.id),
+    hacker ? getTeamForUser(hacker.userId) : Promise.resolve(null),
+  ]);
 
   return (
     <Container className="space-y-6 md:space-y-8">
@@ -55,7 +59,7 @@ const HackerPage = async (
               <HackerApplicationStatus
                 status={hackerUser.applicationStatus as ApplicationStatus}
               />
-              <HackerInfo hacker={hacker} />
+              <HackerInfo hacker={hacker} team={team} linkTeammates />
             </div>
             <div className="flex w-full flex-col gap-6 md:gap-8 xl:w-1/3">
               <div className="rounded-md border">

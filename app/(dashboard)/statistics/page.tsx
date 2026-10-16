@@ -1,8 +1,7 @@
 import { getCurrentUser } from "@/auth";
 import HackerPieChart from "@/components/Charts/HackerPieChart";
 import LevelOfStudyData from "@/components/Charts/LevelOfStudy/LevelOfStudyData";
-import ProgramData from "@/components/Charts/Program/ProgramData";
-import RaceData from "@/components/Charts/Race/RaceData";
+import ApplicationTypeData from "@/components/Charts/ApplicationType/ApplicationTypeData";
 import ReviewPipelineStats from "@/components/Charts/ReviewPipeline/ReviewPipelineStats";
 import ReviewerAnalytics from "@/components/Charts/ReviewerAnalytics";
 import SchoolData from "@/components/Charts/School/SchoolData";
@@ -16,7 +15,8 @@ import {
   applicationReviews,
   rsvp,
 } from "@/lib/db/schema";
-import { count, eq, sql, isNotNull } from "drizzle-orm";
+import { and, count, eq, sql, isNotNull } from "drizzle-orm";
+import { trackLabel } from "@/config/apply";
 import { redirect } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { getReviewerAnalytics } from "@/lib/normalization/normalize";
@@ -38,7 +38,7 @@ const StatisticsPage = async () => {
     [waitlistedApps],
     [rsvpCount],
     topSchools,
-    topMajors,
+    trackBreakdown,
     ratingBySchool,
     levelVsAcceptance,
     reviewCoverage,
@@ -47,6 +47,7 @@ const StatisticsPage = async () => {
     ratingHistogramData,
     [reviewSpeedData],
     reviewerAgreementData,
+    [travelRequests],
     reviewerAnalytics,
   ] = await Promise.all([
     db.select({ count: count() }).from(hackerApplications),
@@ -79,14 +80,13 @@ const StatisticsPage = async () => {
       .limit(1),
     db
       .select({
-        major: hackerApplications.major,
+        applicationType: hackerApplications.applicationType,
         applicants: sql<number>`COUNT(${hackerApplications.userId})`,
       })
       .from(hackerApplications)
-      .where(isNotNull(hackerApplications.major))
-      .groupBy(hackerApplications.major)
-      .orderBy(sql`COUNT(${hackerApplications.userId}) DESC`)
-      .limit(1),
+      .where(eq(hackerApplications.submissionStatus, "submitted"))
+      .groupBy(hackerApplications.applicationType)
+      .orderBy(sql`COUNT(${hackerApplications.userId}) DESC`),
     db
       .select({
         school: hackerApplications.school,
@@ -162,6 +162,15 @@ const StatisticsPage = async () => {
       .from(applicationReviews)
       .groupBy(applicationReviews.applicationId)
       .having(sql`COUNT(*) >= 2`),
+    db
+      .select({ count: count() })
+      .from(hackerApplications)
+      .where(
+        and(
+          eq(hackerApplications.submissionStatus, "submitted"),
+          eq(hackerApplications.needsTravelReimbursement, true),
+        ),
+      ),
     // Reviewer analytics (bias, reliability, etc.)
     getReviewerAnalytics(),
   ]);
@@ -190,7 +199,6 @@ const StatisticsPage = async () => {
   ];
 
   const topSchool = topSchools[0];
-  const topMajor = topMajors[0];
   const coverage = reviewCoverage[0];
   const coveragePct =
     coverage && coverage.total > 0
@@ -270,10 +278,9 @@ const StatisticsPage = async () => {
               </div>
             </div>
 
-            {/* Top School & Major summary */}
             <div className="rounded-lg border p-5">
               <p className="mb-3 text-sm font-semibold text-foreground">
-                Top Representations
+                Tracks and travel
               </p>
               <div className="space-y-3">
                 <div>
@@ -292,21 +299,24 @@ const StatisticsPage = async () => {
                     </p>
                   )}
                 </div>
+                <div className="space-y-1">
+                  {trackBreakdown.map(({ applicationType, applicants: n }) => (
+                    <div
+                      key={applicationType ?? "none"}
+                      className="flex items-center justify-between text-sm"
+                    >
+                      <span>{trackLabel(applicationType)}</span>
+                      <span className="font-medium tabular-nums">{n}</span>
+                    </div>
+                  ))}
+                </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Top Major</p>
-                  <p className="truncate text-sm font-semibold text-foreground">
-                    {topMajor?.major ?? "N/A"}
+                  <p className="text-xs text-muted-foreground">
+                    Travel reimbursement
                   </p>
-                  {topMajor && (
-                    <p className="text-xs text-muted-foreground">
-                      {topMajor.applicants} applicants (
-                      {(
-                        (topMajor.applicants / applications.count) *
-                        100
-                      ).toFixed(1)}
-                      %)
-                    </p>
-                  )}
+                  <p className="text-sm font-semibold text-foreground">
+                    {travelRequests.count} requests
+                  </p>
                 </div>
               </div>
             </div>
@@ -414,9 +424,8 @@ const StatisticsPage = async () => {
           <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
             <div className="space-y-8 md:col-span-2">
               <SchoolData />
-              <ProgramData />
+              <ApplicationTypeData />
               <LevelOfStudyData />
-              <RaceData />
             </div>
             <div className="col-span-2 grid h-fit gap-8 md:grid-cols-2 xl:col-span-1 xl:grid-cols-1">
               <HackerPieChart

@@ -52,13 +52,15 @@ const ReviewGuidelines = () => {
               </span>
             </li>
             <li>
-              Consider technical experience, project history, and enthusiasm to
-              learn.
+              Quick Apps have no essays. Judge the resume, links, and school.
             </li>
             <li>
-              Having answered both short answer questions should not result in a
-              higher score - rate based on the quality of response(s), not
-              quantity.
+              Normal Apps have two short answers. Score the quality of the
+              response, not the length.
+            </li>
+            <li>
+              Team Apps must be read with the roster, each member&apos;s Mars
+              answer, and the shared essay.
             </li>
             <li>
               Evaluate potential contribution and engagement with the hackathon

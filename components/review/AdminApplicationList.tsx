@@ -20,12 +20,14 @@ import Link from "next/link";
 import { ExternalLink, RefreshCw, AlertCircle, CheckCircle2, Clock, UserCheck, UserX, Users } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { trackLabel } from "@/config/apply";
 
 interface Application {
   id: string;
   firstName: string | null;
   lastName: string | null;
   email: string | null;
+  applicationType: string | null;
   reviewCount: number | null;
   averageRating: number | null;
   normalizedAvgRating: number | null;
@@ -235,6 +237,7 @@ export default function AdminApplicationList({
                   />
                 </TableHead>
                 <TableHead className="py-4 font-semibold">Name</TableHead>
+                <TableHead className="py-4 font-semibold">Track</TableHead>
                 <TableHead className="py-4 font-semibold">Status</TableHead>
                 <TableHead className="py-4 text-center font-semibold">
                   Reviews
@@ -276,6 +279,9 @@ export default function AdminApplicationList({
                     <p className="text-xs text-muted-foreground">
                       {application.email}
                     </p>
+                  </TableCell>
+                  <TableCell className="py-4">
+                    {trackLabel(application.applicationType)}
                   </TableCell>
                   <TableCell className="py-4">
                     <ApplicationStatusModal

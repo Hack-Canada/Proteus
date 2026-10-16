@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 type InfoRowProps = {
-  label: string;
+  label: React.ReactNode;
   value: React.ReactNode;
   className?: string;
   icon?: React.ReactNode;

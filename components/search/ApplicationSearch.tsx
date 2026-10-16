@@ -9,12 +9,13 @@ import { useRouter } from "next/navigation";
 import { SearchInput } from "@/components/ui/search-input";
 import { StatusSelect } from "./StatusSelect";
 import { LevelSelect } from "./LevelSelect";
+import { TrackSelect } from "./TrackSelect";
 
 const schema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   school: z.string().optional(),
-  major: z.string().optional(),
+  applicationType: z.enum(["all", "quick", "normal", "team"]).optional(),
   levelOfStudy: z.string().optional(),
   status: z
     .enum([
@@ -40,7 +41,7 @@ export const ApplicationSearch = () => {
       firstName: "",
       lastName: "",
       school: "",
-      major: "",
+      applicationType: "all",
       levelOfStudy: "all",
       status: "all",
     },
@@ -83,12 +84,7 @@ export const ApplicationSearch = () => {
               label="School"
               placeholder="Search by school"
             />
-            <SearchInput
-              form={form}
-              name="major"
-              label="Major"
-              placeholder="Search by major"
-            />
+            <TrackSelect form={form} />
             <LevelSelect form={form} />
             <StatusSelect form={form} />
           </div>
