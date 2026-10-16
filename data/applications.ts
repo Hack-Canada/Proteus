@@ -91,7 +91,7 @@ export const getApplicationsSearch = async (
   lastName: string | undefined,
   school: string | undefined,
   levelOfStudy: string | undefined,
-  major: string | undefined,
+  applicationType: string | undefined,
   status: string | undefined,
   offset: number,
 ) => {
@@ -106,8 +106,9 @@ export const getApplicationsSearch = async (
       conditions.push(ilike(hackerApplications.lastName || "", `${lastName}%`));
     if (school)
       conditions.push(ilike(hackerApplications.school || "", `%${school}%`));
-    if (major)
-      conditions.push(ilike(hackerApplications.major || "", `%${major}%`));
+    if (applicationType && applicationType !== "all") {
+      conditions.push(eq(hackerApplications.applicationType, applicationType));
+    }
 
     if (levelOfStudy && levelOfStudy !== "all") {
       conditions.push(eq(hackerApplications.levelOfStudy, levelOfStudy));
@@ -139,7 +140,7 @@ export const getNumApplicationsSearch = async (
   lastName: string | undefined,
   school: string | undefined,
   levelOfStudy: string | undefined,
-  major: string | undefined,
+  applicationType: string | undefined,
   status: string | undefined,
 ) => {
   try {
@@ -153,8 +154,9 @@ export const getNumApplicationsSearch = async (
       conditions.push(ilike(hackerApplications.lastName || "", `${lastName}%`));
     if (school)
       conditions.push(ilike(hackerApplications.school || "", `%${school}%`));
-    if (major)
-      conditions.push(ilike(hackerApplications.major || "", `%${major}%`));
+    if (applicationType && applicationType !== "all") {
+      conditions.push(eq(hackerApplications.applicationType, applicationType));
+    }
 
     if (levelOfStudy && levelOfStudy !== "all") {
       conditions.push(eq(hackerApplications.levelOfStudy, levelOfStudy));

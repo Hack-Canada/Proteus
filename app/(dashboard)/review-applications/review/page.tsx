@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { and, eq, lt, sql } from "drizzle-orm";
 import { applicationReviews, hackerApplications } from "@/lib/db/schema";
+import { getTeamForUser } from "@/data/teams";
 import ReviewInterface from "@/components/review/ReviewInterface";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ApplicationInfo from "@/components/ApplicationInfo";
@@ -60,6 +61,7 @@ export default async function ReviewsPage() {
   };
 
   const application = nextApplication[0] ?? null;
+  const team = application ? await getTeamForUser(application.userId) : null;
 
   return (
     <div className="container max-w-screen-lg space-y-6 py-6 md:space-y-10">
@@ -89,7 +91,11 @@ export default async function ReviewsPage() {
       <Suspense fallback={<LoadingApplication />}>
         {application ? (
           <div className="space-y-4 md:space-y-8">
-            <ApplicationInfo hacker={application} hideBackgroundInfo />
+            <ApplicationInfo
+              hacker={application}
+              hideBackgroundInfo
+              team={team}
+            />
             <ReviewInterface initialApplication={application} />
           </div>
         ) : (

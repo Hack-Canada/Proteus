@@ -11,7 +11,8 @@ import {
 } from "@/lib/db/schema";
 import DashboardCharts from "@/components/DashboardCharts";
 import { isReviewer } from "@/lib/utils";
-import { count, eq, sql, gte, isNotNull } from "drizzle-orm";
+import { and, count, eq, sql, gte, isNotNull } from "drizzle-orm";
+import { trackLabel } from "@/config/apply";
 import { redirect } from "next/navigation";
 
 export const revalidate = 60;
@@ -47,7 +48,8 @@ const Home = async () => {
     [uniqueSchools],
     [uniqueCountries],
     topSchoolResult,
-    genderBreakdown,
+    trackBreakdown,
+    [travelRequests],
     countryBreakdown,
   ] = await Promise.all([
     db.select({ count: count() }).from(users),
@@ -137,15 +139,22 @@ const Home = async () => {
       .limit(1),
     db
       .select({
-        gender: hackerApplications.gender,
+        applicationType: hackerApplications.applicationType,
         applicants: sql<number>`COUNT(${hackerApplications.userId})`,
       })
       .from(hackerApplications)
-      .where(
-        sql`${hackerApplications.gender} IS NOT NULL AND ${hackerApplications.submissionStatus} = 'submitted'`
-      )
-      .groupBy(hackerApplications.gender)
+      .where(eq(hackerApplications.submissionStatus, "submitted"))
+      .groupBy(hackerApplications.applicationType)
       .orderBy(sql`COUNT(${hackerApplications.userId}) DESC`),
+    db
+      .select({ count: count() })
+      .from(hackerApplications)
+      .where(
+        and(
+          eq(hackerApplications.submissionStatus, "submitted"),
+          eq(hackerApplications.needsTravelReimbursement, true),
+        ),
+      ),
     db
       .select({
         country: hackerApplications.country,
@@ -238,6 +247,10 @@ const Home = async () => {
             <InsightCard label="Unique Schools" value={uniqueSchools.count} />
             <InsightCard label="Countries" value={uniqueCountries.count} />
             <InsightCard
+              label="Travel Requests"
+              value={travelRequests.count}
+            />
+            <InsightCard
               label="Top School"
               value={topSchool?.school ?? "N/A"}
               subtitle={
@@ -275,16 +288,16 @@ const Home = async () => {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="rounded-lg border p-5">
               <p className="mb-3 text-sm font-semibold text-foreground">
-                Gender Breakdown
+                Application Tracks
               </p>
               <div className="space-y-2">
-                {genderBreakdown.map(({ gender, applicants: gCount }) => {
+                {trackBreakdown.map(({ applicationType, applicants: gCount }) => {
                   const pct =
                     applicants.count > 0
                       ? ((gCount / applicants.count) * 100).toFixed(1)
                       : "0";
                   return (
-                    <div key={gender} className="flex items-center gap-3">
+                    <div key={applicationType ?? "none"} className="flex items-center gap-3">
                       <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                         <div
                           className="h-full rounded-full bg-primary"
@@ -292,7 +305,7 @@ const Home = async () => {
                         />
                       </div>
                       <span className="w-24 truncate text-xs">
-                        {gender || "Not specified"}
+                        {trackLabel(applicationType)}
                       </span>
                       <span className="w-16 text-right text-xs font-medium tabular-nums">
                         {gCount} ({pct}%)

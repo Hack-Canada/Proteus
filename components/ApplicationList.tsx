@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { hackerApplications, users } from "@/lib/db/schema";
+import { trackLabel } from "@/config/apply";
 import ApplicationStatusModal from "./ApplicationStatusModal";
 
 type HackerWithUser = {
@@ -36,7 +37,7 @@ const HackerList = ({ applications }: Props) => {
           <TableHead className="py-4 font-semibold">Name</TableHead>
           <TableHead className="py-4 font-semibold">Status</TableHead>
           <TableHead className="py-4 font-semibold">School</TableHead>
-          <TableHead className="py-4 font-semibold">Major</TableHead>
+          <TableHead className="py-4 font-semibold">Track</TableHead>
           <TableHead className="py-4 font-semibold">Age</TableHead>
         </TableRow>
       </TableHeader>
@@ -78,13 +79,7 @@ const HackerList = ({ applications }: Props) => {
             </TableCell>
 
             <TableCell className="py-4">
-              {app.hackerApplication.major ? (
-                <span className="capitalize">
-                  {app.hackerApplication.major}
-                </span>
-              ) : (
-                "-"
-              )}
+              {trackLabel(app.hackerApplication.applicationType)}
             </TableCell>
             <TableCell className="max-w-[200px] truncate py-4">
               {app.hackerApplication.age ? (

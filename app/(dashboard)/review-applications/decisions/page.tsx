@@ -68,6 +68,7 @@ export default async function AdminApplicationsPage(
         firstName: hackerApplications.firstName,
         lastName: hackerApplications.lastName,
         email: hackerApplications.email,
+        applicationType: hackerApplications.applicationType,
         reviewCount: hackerApplications.reviewCount,
         averageRating: hackerApplications.averageRating,
         normalizedAvgRating: hackerApplications.normalizedAvgRating,

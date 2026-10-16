@@ -5,6 +5,7 @@ import {
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -158,25 +159,17 @@ export const hackerApplications = pgTable("hackerApplication", {
   firstName: text("firstName"),
   lastName: text("lastName"),
   age: integer("age"),
-  pronouns: text("pronouns"),
   email: text("email"),
-  phoneNumber: text("phoneNumber"),
   github: text("github"),
   linkedin: text("linkedin"),
   personalWebsite: text("personalWebsite"),
   resumeUrl: text("resume"),
   shareResume: boolean("shareResume"),
   school: text("school"),
-  major: text("major"),
   levelOfStudy: text("levelOfStudy"),
-  graduationYear: integer("graduationYear"),
-  gender: text("gender"),
-  race: text("race"),
   country: text("country"),
   shortAnswer1: text("shortAnswer1"),
   shortAnswer2: text("shortAnswer2"),
-  shortAnswer3: text("shortAnswer3"),
-  technicalInterests: text("technicalInterests"),
   hackathonsAttended: text("hackathonsAttended"),
   mlhCheckbox1: boolean("mlhCheckbox1"),
   mlhCheckbox2: boolean("mlhCheckbox2"),
@@ -194,7 +187,58 @@ export const hackerApplications = pgTable("hackerApplication", {
   averageRating: integer("averageRating"),
   normalizedAvgRating: integer("normalizedAvgRating"),
   lastNormalizedAt: timestamp("lastNormalizedAt"),
+  isTeam: boolean("isTeam").notNull().default(false),
+  applicationType: text("applicationType"),
+  xUrl: text("xUrl"),
+  needsTravelReimbursement: boolean("needsTravelReimbursement"),
+  travelAmount: integer("travelAmount"),
+  travelFrom: text("travelFrom"),
 });
+
+export const teams = pgTable("team", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  name: text("name").notNull(),
+  isPublic: boolean("isPublic").notNull().default(false),
+  inviteToken: text("inviteToken").notNull().unique(),
+  lookingFor: text("lookingFor"),
+  answersLocked: boolean("answersLocked").notNull().default(false),
+  essay: text("essay"),
+  essayUpdatedBy: text("essayUpdatedBy").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  essayUpdatedAt: timestamp("essayUpdatedAt"),
+  createdBy: text("createdBy")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("createdAt")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const teamMembers = pgTable(
+  "teamMember",
+  {
+    teamId: text("teamId")
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    userId: text("userId")
+      .notNull()
+      .unique()
+      .references(() => users.id, { onDelete: "cascade" }),
+    marsAnswer: text("marsAnswer"),
+    joinedAt: timestamp("joinedAt")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.teamId, table.userId] }),
+  }),
+);
+
+export type Team = typeof teams.$inferSelect;
+export type TeamMember = typeof teamMembers.$inferSelect;
 
 export const applicationReviews = pgTable("applicationReview", {
   id: text("id")

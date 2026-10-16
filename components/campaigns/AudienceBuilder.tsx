@@ -28,6 +28,7 @@ import {
   AUDIENCE_PRESETS,
   type AudienceFilterInput,
 } from "@/lib/validations/campaign";
+import { levelsOfStudy as LEVELS_OF_STUDY } from "@/config/apply";
 import {
   Users,
   ChevronDown,
@@ -65,14 +66,6 @@ const APPLICATION_STATUSES = [
   { value: "waitlisted", label: "Waitlisted" },
   { value: "cancelled", label: "Cancelled" },
   { value: "not_applied", label: "Not Applied" },
-];
-
-const LEVELS_OF_STUDY = [
-  "Undergraduate",
-  "Graduate",
-  "High School",
-  "Bootcamp",
-  "Other",
 ];
 
 export function AudienceBuilder({ value, onChange, disabled }: Props) {
