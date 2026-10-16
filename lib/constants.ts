@@ -44,6 +44,7 @@ export const navSections: NavSection[] = [
       { name: "Review", href: "/review-applications" },
       { name: "Applications", href: "/applications", adminOnly: true },
       { name: "Teams", href: "/teams", adminOnly: true },
+      { name: "Reimbursements", href: "/reimbursements", adminOnly: true },
       { name: "Decisions", href: "/review-applications/decisions", adminOnly: true },
       { name: "Emails", href: "/emails", adminOnly: true },
     ],

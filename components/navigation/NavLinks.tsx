@@ -23,6 +23,7 @@ import {
   UsersRound,
   ListChecks,
   Trophy,
+  Plane,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 
@@ -46,6 +47,7 @@ const iconMap = {
   Points: Coins,
   Shop: ShoppingBag,
   Teams: UsersRound,
+  Reimbursements: Plane,
   Decisions: ListChecks,
 };
 

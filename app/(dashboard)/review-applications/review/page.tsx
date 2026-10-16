@@ -12,7 +12,7 @@ import ReviewInterface from "@/components/review/ReviewInterface";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ApplicationInfo from "@/components/ApplicationInfo";
 import { Suspense } from "react";
-import { isReviewer } from "@/lib/utils";
+import { isAdmin, isReviewer } from "@/lib/utils";
 import LoadingApplication from "./loading-application";
 import LoadingStats from "./loading-stats";
 import { REVIEWS_PER_APP } from "@/lib/constants";
@@ -100,6 +100,7 @@ export default async function ReviewsPage() {
               hacker={application}
               hideBackgroundInfo
               team={team}
+              canEditTravel={isAdmin(user.role)}
             />
             <ReviewInterface initialApplication={application} />
           </div>

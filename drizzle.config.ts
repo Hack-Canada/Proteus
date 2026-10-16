@@ -4,7 +4,6 @@ import { loadEnvConfig } from "@next/env";
 loadEnvConfig(process.cwd());
 
 const databaseUrl = process.env.DATABASE_URL;
-console.log("databaseUrl", databaseUrl);
 if (!databaseUrl) {
   throw new Error("DATABASE_URL is not set");
 }
