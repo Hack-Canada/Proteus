@@ -7,7 +7,6 @@ import Container from "@/components/Container";
 import DashboardCharts from "@/components/DashboardCharts";
 import PageBanner from "@/components/PageBanner";
 import { trackLabel } from "@/config/apply";
-import { DASHBOARD_REVALIDATE_SECONDS } from "@/lib/constants";
 import {
   getApplicationsOverTime,
   getFunnel,
@@ -24,7 +23,8 @@ import { isReviewer } from "@/lib/utils";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
-export const revalidate = DASHBOARD_REVALIDATE_SECONDS;
+// ponytail: Next reads this export statically, so it has to be a literal. Keep it equal to DASHBOARD_REVALIDATE_SECONDS.
+export const revalidate = 60;
 
 const Home = async () => {
   const user = await getCurrentUser();

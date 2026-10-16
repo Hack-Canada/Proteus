@@ -4,6 +4,7 @@ export const MAX_REVIEW_LIMIT = Math.ceil(MIN_REVIEW_LIMIT * 3.5);
 export const REVIEWS_PER_APP = 5;
 export const RATINGS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 export const MAX_TEAM_SIZE = 4;
+// Must match `export const revalidate` on the home page. Next cannot import it there.
 export const DASHBOARD_REVALIDATE_SECONDS = 60;
 export const SESSION_COOKIE_NAME = "authjs.session-token-admin";
 
