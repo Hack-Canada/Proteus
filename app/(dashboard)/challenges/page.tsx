@@ -1,3 +1,7 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Challenges" };
+
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/auth";
 import { count, eq, getTableColumns } from "drizzle-orm";
@@ -10,7 +14,7 @@ export default async function AdminPage() {
   const currentUser = await getCurrentUser();
 
   if (!currentUser) {
-    redirect("/sign-in");
+    redirect("/login");
   }
 
   if (currentUser.role !== "admin") {

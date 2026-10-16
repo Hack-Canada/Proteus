@@ -13,7 +13,9 @@ import {
   Text,
 } from "@react-email/components";
 import { Tailwind } from "@react-email/tailwind";
-import { hackathonYear } from "@/config/site";
+import { eventCheckInLabel, hackathonYear } from "@/config/site";
+
+// ponytail: 2027 Devpost URL doesn't exist yet, so the link stays on 2026.
 
 type Props = {
   name: string;
@@ -28,7 +30,7 @@ const HackathonPrepEmail = ({ name, userId }: Props) => {
   return (
     <Html>
       <Preview>
-        🚀 Hack Canada Event Details and Check-in Information - 2026
+        {`Hack Canada Event Details and Check-in Information - ${hackathonYear}`}
       </Preview>
       <Tailwind
         config={{
@@ -144,7 +146,7 @@ const HackathonPrepEmail = ({ name, userId }: Props) => {
                       CHECK-IN TIME
                     </strong>
                     <div style={{ marginTop: "4px" }}>
-                      Friday, March 6th, 4:00 PM — 6:30 PM
+                      {eventCheckInLabel}
                     </div>
                     <Text
                       style={{

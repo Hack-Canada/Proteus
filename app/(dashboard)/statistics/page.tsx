@@ -1,3 +1,7 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Statistics" };
+
 import { getCurrentUser } from "@/auth";
 import HackerPieChart from "@/components/Charts/HackerPieChart";
 import LevelOfStudyData from "@/components/Charts/LevelOfStudy/LevelOfStudyData";
@@ -13,9 +17,10 @@ import {
   hackerApplications,
   users,
   applicationReviews,
-  rsvp,
 } from "@/lib/db/schema";
 import { and, count, eq, sql, isNotNull } from "drizzle-orm";
+import { REVIEWS_PER_APP } from "@/lib/constants";
+import { getFunnel, getTeamStats, getTopCountries, getTravelStats } from "@/data/stats";
 import { trackLabel } from "@/config/apply";
 import { redirect } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -32,49 +37,40 @@ const StatisticsPage = async () => {
 
   const [
     [applications],
-    [pendingApps],
-    [acceptedApps],
-    [rejectedApps],
-    [waitlistedApps],
-    [rsvpCount],
+    funnel,
+    teamStats,
+    countries,
     topSchools,
     trackBreakdown,
     ratingBySchool,
     levelVsAcceptance,
     reviewCoverage,
-    rsvpRate,
     reviewProgressData,
     ratingHistogramData,
     [reviewSpeedData],
     reviewerAgreementData,
-    [travelRequests],
+    travelRequests,
     reviewerAnalytics,
   ] = await Promise.all([
-    db.select({ count: count() }).from(hackerApplications),
     db
       .select({ count: count() })
-      .from(users)
-      .where(eq(users.applicationStatus, "pending")),
-    db
-      .select({ count: count() })
-      .from(users)
-      .where(eq(users.applicationStatus, "accepted")),
-    db
-      .select({ count: count() })
-      .from(users)
-      .where(eq(users.applicationStatus, "rejected")),
-    db
-      .select({ count: count() })
-      .from(users)
-      .where(eq(users.applicationStatus, "waitlisted")),
-    db.select({ count: count() }).from(rsvp),
+      .from(hackerApplications)
+      .where(eq(hackerApplications.submissionStatus, "submitted")),
+    getFunnel(),
+    getTeamStats(),
+    getTopCountries(8),
     db
       .select({
         school: hackerApplications.school,
         applicants: sql<number>`COUNT(${hackerApplications.userId})`,
       })
       .from(hackerApplications)
-      .where(isNotNull(hackerApplications.school))
+      .where(
+        and(
+          eq(hackerApplications.submissionStatus, "submitted"),
+          isNotNull(hackerApplications.school),
+        ),
+      )
       .groupBy(hackerApplications.school)
       .orderBy(sql`COUNT(${hackerApplications.userId}) DESC`)
       .limit(1),
@@ -94,7 +90,12 @@ const StatisticsPage = async () => {
         appCount: sql<number>`COUNT(${hackerApplications.userId})`,
       })
       .from(hackerApplications)
-      .where(isNotNull(hackerApplications.averageRating))
+      .where(
+        and(
+          eq(hackerApplications.submissionStatus, "submitted"),
+          isNotNull(hackerApplications.averageRating),
+        ),
+      )
       .groupBy(hackerApplications.school)
       .orderBy(sql`AVG(${hackerApplications.averageRating}) DESC`)
       .limit(5),
@@ -106,23 +107,22 @@ const StatisticsPage = async () => {
       })
       .from(hackerApplications)
       .innerJoin(users, eq(hackerApplications.userId, users.id))
-      .where(isNotNull(hackerApplications.levelOfStudy))
+      .where(
+        and(
+          eq(hackerApplications.submissionStatus, "submitted"),
+          isNotNull(hackerApplications.levelOfStudy),
+        ),
+      )
       .groupBy(hackerApplications.levelOfStudy)
       .orderBy(sql`COUNT(${hackerApplications.userId}) DESC`),
     db
       .select({
         total: sql<number>`COUNT(${hackerApplications.id})`,
-        reviewed: sql<number>`COUNT(CASE WHEN ${hackerApplications.reviewCount} > 0 THEN 1 END)`,
-        unreviewed: sql<number>`COUNT(CASE WHEN ${hackerApplications.reviewCount} = 0 THEN 1 END)`,
+        reviewed: sql<number>`COUNT(CASE WHEN ${hackerApplications.reviewCount} >= ${REVIEWS_PER_APP} THEN 1 END)`,
+        unreviewed: sql<number>`COUNT(CASE WHEN ${hackerApplications.reviewCount} < ${REVIEWS_PER_APP} THEN 1 END)`,
       })
       .from(hackerApplications)
       .where(eq(hackerApplications.submissionStatus, "submitted")),
-    db
-      .select({
-        accepted: sql<number>`COUNT(DISTINCT ${users.id})`,
-      })
-      .from(users)
-      .where(eq(users.applicationStatus, "accepted")),
     // Review progress distribution (how many apps have 0, 1, 2, ... 5 reviews)
     db
       .select({
@@ -162,15 +162,7 @@ const StatisticsPage = async () => {
       .from(applicationReviews)
       .groupBy(applicationReviews.applicationId)
       .having(sql`COUNT(*) >= 2`),
-    db
-      .select({ count: count() })
-      .from(hackerApplications)
-      .where(
-        and(
-          eq(hackerApplications.submissionStatus, "submitted"),
-          eq(hackerApplications.needsTravelReimbursement, true),
-        ),
-      ),
+    getTravelStats(),
     // Reviewer analytics (bias, reliability, etc.)
     getReviewerAnalytics(),
   ]);
@@ -178,22 +170,22 @@ const StatisticsPage = async () => {
   const applicationData = [
     {
       status: "pending",
-      applicants: pendingApps.count,
+      applicants: funnel.pending,
       fill: "var(--color-pending)",
     },
     {
       status: "accepted",
-      applicants: acceptedApps.count,
+      applicants: funnel.accepted,
       fill: "var(--color-accepted)",
     },
     {
       status: "rejected",
-      applicants: rejectedApps.count,
+      applicants: funnel.rejected,
       fill: "var(--color-rejected)",
     },
     {
       status: "waitlisted",
-      applicants: waitlistedApps.count,
+      applicants: funnel.waitlisted,
       fill: "var(--color-waitlisted)",
     },
   ];
@@ -204,10 +196,8 @@ const StatisticsPage = async () => {
     coverage && coverage.total > 0
       ? ((coverage.reviewed / coverage.total) * 100).toFixed(1)
       : "0";
-  const rsvpRateVal =
-    rsvpRate[0] && rsvpRate[0].accepted > 0
-      ? ((rsvpCount.count / rsvpRate[0].accepted) * 100).toFixed(1)
-      : "0";
+  const rsvpRateVal = funnel.rsvpRate.toFixed(1);
+  const checkInRateVal = funnel.checkInRate.toFixed(1);
 
   return (
     <Container>
@@ -236,7 +226,7 @@ const StatisticsPage = async () => {
                       {coveragePct}%
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      of applications reviewed
+                      of submitted apps have {REVIEWS_PER_APP} reviews
                     </span>
                   </div>
                   <div className="mb-3 h-2 overflow-hidden rounded-full bg-muted">
@@ -246,8 +236,8 @@ const StatisticsPage = async () => {
                     />
                   </div>
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{coverage.reviewed} reviewed</span>
-                    <span>{coverage.unreviewed} remaining</span>
+                    <span>{coverage.reviewed} complete</span>
+                    <span>{coverage.unreviewed} still short</span>
                   </div>
                 </>
               )}
@@ -273,8 +263,52 @@ const StatisticsPage = async () => {
                 />
               </div>
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{rsvpCount.count} RSVPs</span>
-                <span>{rsvpRate[0]?.accepted ?? 0} accepted</span>
+                <span>{funnel.rsvp} RSVPs</span>
+                <span>{funnel.accepted} accepted</span>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border p-5 dark:border-white/[0.06]">
+              <p className="mb-2 text-sm font-semibold text-foreground">Check-in rate</p>
+              <div className="mb-2 flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-foreground">{checkInRateVal}%</span>
+                <span className="text-xs text-muted-foreground">of RSVPs checked in</span>
+              </div>
+              <div className="mb-3 h-2 overflow-hidden rounded-full bg-muted">
+                <div className="h-full rounded-full bg-primary" style={{ width: `${checkInRateVal}%` }} />
+              </div>
+              <p className="text-xs text-muted-foreground">{funnel.checkedIn} checked in</p>
+            </div>
+
+            <div className="rounded-3xl border p-5 dark:border-white/[0.06]">
+              <p className="mb-2 text-sm font-semibold text-foreground">Teams</p>
+              <p className="text-2xl font-bold text-foreground">{teamStats.teams}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Avg size {teamStats.averageSize.toFixed(1)} · {teamStats.fullTeams} full (4)
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {teamStats.teamApplicants} team applicants · {teamStats.soloApplicants} solo
+              </p>
+            </div>
+
+            <div className="rounded-3xl border p-5 dark:border-white/[0.06]">
+              <p className="mb-3 text-sm font-semibold text-foreground">Top countries</p>
+              <div className="space-y-2">
+                {countries.map(({ country, applicants }) => {
+                  const width =
+                    countries[0]?.applicants > 0
+                      ? Math.round((applicants / countries[0].applicants) * 100)
+                      : 0;
+                  return (
+                    <div key={country} className="flex items-center gap-3 text-sm">
+                      <div className="h-2 w-16 overflow-hidden rounded-full bg-muted">
+                        <div className="h-full rounded-full bg-primary" style={{ width: `${width}%` }} />
+                      </div>
+                      <span className="flex-1 truncate">{country}</span>
+                      <span className="tabular-nums">{applicants}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -315,7 +349,8 @@ const StatisticsPage = async () => {
                     Travel reimbursement
                   </p>
                   <p className="text-sm font-semibold text-foreground">
-                    {travelRequests.count} requests
+                    {travelRequests.count} requests · $
+                    {travelRequests.total.toLocaleString("en-CA")}
                   </p>
                 </div>
               </div>

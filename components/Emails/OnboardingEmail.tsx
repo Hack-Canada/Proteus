@@ -15,6 +15,8 @@ import {
 import { Tailwind } from "@react-email/tailwind";
 import { hackathonYear } from "@/config/site";
 
+// ponytail: 2027 Devpost and Notion URLs don't exist yet, so these stay on 2026.
+
 type Props = {
   name: string;
   userId: string;
@@ -23,7 +25,7 @@ type Props = {
 const OnboardingEmail = ({ name, userId }: Props) => {
   return (
     <Html>
-      <Preview>Important Links and Information for Hack Canada 2026</Preview>
+      <Preview>{`Important Links and Information for Hack Canada ${hackathonYear}`}</Preview>
       <Tailwind
         config={{
           theme: {
@@ -95,7 +97,7 @@ const OnboardingEmail = ({ name, userId }: Props) => {
                   margin: "0 0 16px 0",
                 }}
               >
-                We&apos;re so excited to have you at Hack Canada 2026! The event
+                We&apos;re so excited to have you at Hack Canada {hackathonYear}! The event
                 is just around the corner, and we wanted to share some important
                 links and information to help you prepare.
               </Text>

@@ -1,3 +1,7 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Review Drill" };
+
 import { getCurrentUser } from "@/auth";
 import Container from "@/components/Container";
 import PageBanner from "@/components/PageBanner";
@@ -129,6 +133,8 @@ export default async function ReviewDrillPage({ searchParams }: PageProps) {
                     <td className="px-4 py-3 text-center">
                       <Link
                         href={`/applications/${app.userId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-primary hover:underline"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
@@ -221,6 +227,8 @@ export default async function ReviewDrillPage({ searchParams }: PageProps) {
                     <div className="flex items-center justify-center gap-2">
                       <Link
                         href={`/applications/${review.applicantUserId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="text-primary hover:underline"
                         title="View Application"
                       >
@@ -386,6 +394,8 @@ export default async function ReviewDrillPage({ searchParams }: PageProps) {
                   <td className="px-4 py-3 text-center">
                     <Link
                       href={`/applications/${app.userId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-primary hover:underline"
                     >
                       <ExternalLink className="h-3.5 w-3.5" />

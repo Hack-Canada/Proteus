@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { hackathonYear } from "@/config/site";
 
 export const audienceFilterSchema = z.object({
   preset: z.string().optional(),
@@ -92,7 +93,7 @@ export const EMAIL_TEMPLATES = [
     name: "Hacker Information Email",
     description:
       "Sent to accepted hackers with important links (Schedule, Discord, Devpost, Hacker Package)",
-    subject: "Important Links and Information for Hack Canada 2026",
+    subject: `Important Links and Information for Hack Canada ${hackathonYear}`,
     needsUserId: true,
   },
   {

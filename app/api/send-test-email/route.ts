@@ -11,6 +11,7 @@ import OnboardingEmail from "@/components/Emails/OnboardingEmail";
 import HackathonPrepEmail from "@/components/Emails/HackathonPrepEmail";
 import RSVPReminder from "@/components/Emails/RSVPReminder";
 import { render } from "@react-email/render";
+import { hackathonYear } from "@/config/site";
 
 const sendTestEmailSchema = z.object({
   template: z.enum([
@@ -35,7 +36,7 @@ const PROD_SUBJECTS: Record<string, string> = {
   rejection: "Thank You for Your Application to Hack Canada",
   reminder:
     "We Noticed You Haven't Applied Yet – Don't Miss Out on Hack Canada!",
-  onboarding: "Important Links and Information for Hack Canada 2026",
+  onboarding: `Important Links and Information for Hack Canada ${hackathonYear}`,
   "hackathon-prep": "🚀 Hack Canada Event Details and Check-in Information",
   "rsvp-reminder":
     "🚨 Urgent: Final RSVP Reminder - Please Respond by Tonight for Hack Canada",
@@ -72,6 +73,13 @@ const renderTemplate = async (
 export async function POST(
   req: NextRequest,
 ): Promise<NextResponse<ApiResponse>> {
+  if (process.env.NODE_ENV !== "development") {
+    return NextResponse.json(
+      { success: false, message: "Not found." },
+      { status: 404 },
+    );
+  }
+
   try {
     const currentUser = await getCurrentUser();
 

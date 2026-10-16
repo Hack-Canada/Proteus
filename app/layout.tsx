@@ -3,15 +3,20 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/Providers/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
-import { fredoka, rubik } from "@/lib/fonts";
+import { fredoka, londrina, rubik } from "@/lib/fonts";
+import { siteConfig } from "@/config/site";
 import Providers from "../components/providers";
 
 export const metadata: Metadata = {
-  title: "HC Admin",
-  description: "Hack Canada Admin Dashboard",
-  icons: {
-    icon: "/favicon.ico",
+  metadataBase: siteConfig.metadataBase,
+  title: {
+    default: siteConfig.title,
+    template: "%s | HC Admin",
   },
+  description: siteConfig.description,
+  robots: { index: false, follow: false },
+  openGraph: siteConfig.openGraph,
+  twitter: siteConfig.twitter,
 };
 
 export default function RootLayout({
@@ -21,7 +26,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn("", fredoka.className, rubik.variable)}>
+      <body
+        className={cn("", fredoka.className, rubik.variable, londrina.variable)}
+      >
         <Toaster richColors position="bottom-center" />
         <ThemeProvider attribute="class" defaultTheme="dark">
           <Providers>{children}</Providers>

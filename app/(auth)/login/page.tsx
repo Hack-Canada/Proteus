@@ -3,21 +3,23 @@ import Image from "next/image";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import LoginForm from "@/components/login-form";
 import { getCurrentUser } from "@/auth";
+import { portalUrl } from "@/config/site";
+import { isReviewer } from "@/lib/utils";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "Login | HC Admin",
+  title: "Login",
   description: "Login to access the Hack Canada admin dashboard",
 };
 
 const LoginPage = async () => {
   const currentUser = await getCurrentUser();
 
-  if (currentUser && currentUser.role !== "admin") {
-    redirect("https://app.hackcanada.org");
+  if (currentUser && !isReviewer(currentUser.role)) {
+    redirect(portalUrl);
   }
 
-  if (currentUser && currentUser.role === "admin") {
+  if (currentUser && isReviewer(currentUser.role)) {
     redirect("/");
   }
 
@@ -26,14 +28,14 @@ const LoginPage = async () => {
       <CardHeader className="flex items-center justify-center pb-2">
         <div className="relative h-24 w-40">
           <Image
-            src="/logo.webp"
+            src="/hack-canada-logo.png"
             alt="Hack Canada Logo"
             fill
             className="object-contain"
             priority
           />
         </div>
-        <h1 className="mt-4 text-center text-2xl font-semibold">
+        <h1 className="mt-4 text-center font-display text-4xl">
           Admin Dashboard
         </h1>
       </CardHeader>

@@ -11,18 +11,18 @@ const Navbar = async ({}: Props) => {
   const user = await getCurrentUser();
 
   return (
-    <header className="fixed z-40 flex h-20 w-full items-center justify-center border-b bg-background">
+    <header className="fixed z-40 flex h-20 w-full items-center justify-center border-b bg-background/85 backdrop-blur-md dark:border-white/[0.06]">
       <nav className="mx-auto flex h-full w-full flex-1 items-center justify-between px-4 py-2.5 sm:px-8 sm:py-4">
         <div className="flex items-center gap-3">
           <Image
-            src={"/logo.webp"}
+            src="/hack-canada-logo.png"
             alt="Hack Canada Logo"
             width={40}
             height={40}
             className="translate-y-0.5"
           />
-          <p className="w-fit bg-gradient-to-r from-primary/80 to-primary bg-clip-text text-xl font-semibold text-transparent transition-colors dark:from-sky-500 dark:to-blue-500 xl:text-2xl">
-            Hack Canada Admin
+          <p className="font-display text-2xl text-foreground xl:text-3xl">
+            Hack Canada <span className="text-primary">Admin</span>
           </p>
         </div>
 

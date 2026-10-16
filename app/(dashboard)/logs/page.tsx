@@ -1,3 +1,7 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Logs" };
+
 import { getCurrentUser } from "@/auth";
 import { getLogs, getDistinctEntityTypes, getLogFlags } from "@/data/logs-page";
 import Container from "@/components/Container";
