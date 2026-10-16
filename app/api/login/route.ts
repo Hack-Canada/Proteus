@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { signIn } from "@/auth";
 import { AuthError } from "next-auth";
+import bcrypt from "bcryptjs";
 
 import { ApiResponse } from "@/types/api";
 import { getUserByEmail } from "@/lib/db/queries/user";
@@ -47,6 +48,34 @@ export async function POST(
     existingUser = await getUserByEmail(email);
 
     if (!existingUser) {
+      return NextResponse.json({
+        success: false,
+        message: "Invalid email or password.",
+      });
+    }
+
+    if (!existingUser.password) {
+      return NextResponse.json({
+        success: false,
+        message:
+          "This account has no password. Sign in with the provider used to register.",
+      });
+    }
+
+    const passwordsMatch = await bcrypt.compare(password, existingUser.password);
+
+    if (!passwordsMatch) {
+      await createAuditLog({
+        userId: existingUser.id,
+        action: "create",
+        entityType: "session",
+        entityId: existingUser.id,
+        metadata: {
+          reason: "Failed login attempt - Invalid credentials",
+          email: email,
+        },
+      });
+
       return NextResponse.json({
         success: false,
         message: "Invalid email or password.",
@@ -115,9 +144,8 @@ export async function POST(
       message: "Welcome!",
     });
   } catch (error) {
-    console.error("Error during login:", error);
-
-    // Handling known errors
+    // Auth.js throws this for a rejected credentials sign-in. It is a failed
+    // login, not a server crash, so it should not be logged as an exception.
     if (error instanceof Error) {
       const { type } = error as AuthError;
       if (type === "CredentialsSignin") {
@@ -142,6 +170,8 @@ export async function POST(
         });
       }
     }
+
+    console.error("Error during login:", error);
 
     // Log unhandled error
     if (existingUser) {

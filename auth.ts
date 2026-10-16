@@ -4,7 +4,7 @@ import NextAuth, { DefaultSession } from "next-auth";
 
 import authConfig from "./auth.config";
 import { db } from "./lib/db";
-import { getUserById } from "./lib/db/queries/user";
+import { getUserByEmail, getUserById } from "./lib/db/queries/user";
 import { isReviewer } from "./lib/utils";
 
 declare module "next-auth" {
@@ -71,14 +71,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
     async jwt({ token }) {
-      if (!token.sub) {
+      if (!token.sub && !token.email) {
         return token;
       }
 
-      const existingUser = await getUserById(token.sub);
+      // The same person can exist under a new id after the database changes.
+      // Fall back to email so a still-valid login keeps working.
+      let existingUser = token.sub ? await getUserById(token.sub) : null;
+      if (!existingUser && token.email) {
+        existingUser = await getUserByEmail(token.email);
+      }
 
       if (!existingUser) return token;
 
+      token.sub = existingUser.id;
       token.name = existingUser.name;
       token.email = existingUser.email;
       token.role = existingUser.role as UserRole | "unassigned";

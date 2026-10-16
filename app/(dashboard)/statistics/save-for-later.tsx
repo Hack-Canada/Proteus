@@ -1,8 +1,7 @@
 import { getCurrentUser } from "@/auth";
 import HackerPieChart from "@/components/Charts/HackerPieChart";
 import LevelOfStudyData from "@/components/Charts/LevelOfStudy/LevelOfStudyData";
-import ProgramData from "@/components/Charts/Program/ProgramData";
-import RaceData from "@/components/Charts/Race/RaceData";
+import ApplicationTypeData from "@/components/Charts/ApplicationType/ApplicationTypeData";
 import SchoolData from "@/components/Charts/School/SchoolData";
 // import TShirtData from "@/components/Charts/TShirt/TShirtData";
 import Container from "@/components/Container";
@@ -69,9 +68,8 @@ const StatisticsPage = async () => {
     <Container className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
       <div className="space-y-8 md:col-span-2">
         <SchoolData />
-        <ProgramData />
+        <ApplicationTypeData />
         <LevelOfStudyData />
-        <RaceData />
       </div>
       <div className="col-span-2 grid h-fit gap-8 md:grid-cols-2 xl:col-span-1 xl:grid-cols-1">
         <HackerPieChart

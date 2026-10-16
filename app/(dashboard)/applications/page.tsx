@@ -36,7 +36,8 @@ const ApplicationsPage = async (props: ApplicationsPageProps) => {
   const lastName = getParamAsString(searchParams["lastName"]);
   const school = getParamAsString(searchParams["school"]);
   const levelOfStudy = getParamAsString(searchParams["levelOfStudy"]) || "all";
-  const major = getParamAsString(searchParams["major"]);
+  const applicationType =
+    getParamAsString(searchParams["applicationType"]) || "all";
   const status = getParamAsString(searchParams["status"]) || "all";
 
   const params = new URLSearchParams();
@@ -44,7 +45,7 @@ const ApplicationsPage = async (props: ApplicationsPageProps) => {
   params.append("lastName", lastName);
   params.append("school", school);
   params.append("levelOfStudy", levelOfStudy);
-  params.append("major", major);
+  params.append("applicationType", applicationType);
   params.append("status", status);
 
   const start = (Number(page) - 1) * Number(perPage);
@@ -55,7 +56,7 @@ const ApplicationsPage = async (props: ApplicationsPageProps) => {
       lastName,
       school,
       levelOfStudy,
-      major,
+      applicationType,
       status,
     ) ?? 0,
     getApplicationsSearch(
@@ -63,7 +64,7 @@ const ApplicationsPage = async (props: ApplicationsPageProps) => {
       lastName,
       school,
       levelOfStudy,
-      major,
+      applicationType,
       status,
       start,
     ),
