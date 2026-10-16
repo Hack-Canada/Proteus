@@ -63,7 +63,7 @@ const HackerPage = async (
               <HackerApplicationStatus
                 status={hackerUser.applicationStatus as ApplicationStatus}
               />
-              <HackerInfo hacker={hacker} team={team} linkTeammates />
+              <HackerInfo hacker={hacker} team={team} linkTeammates canEditTravel />
             </div>
             <div className="flex w-full flex-col gap-6 md:gap-8 xl:w-1/3">
               <div className="rounded-md border">

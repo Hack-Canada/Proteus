@@ -193,6 +193,12 @@ export const hackerApplications = pgTable("hackerApplication", {
   needsTravelReimbursement: boolean("needsTravelReimbursement"),
   travelAmount: integer("travelAmount"),
   travelFrom: text("travelFrom"),
+  travelDecision: text("travelDecision"),
+  travelApprovedAmount: integer("travelApprovedAmount"),
+  travelReviewedBy: text("travelReviewedBy").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  travelReviewedAt: timestamp("travelReviewedAt"),
 });
 
 export const teams = pgTable("team", {

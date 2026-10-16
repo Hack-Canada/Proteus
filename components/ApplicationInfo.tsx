@@ -44,6 +44,7 @@ type Props = {
   hideBackgroundInfo?: boolean;
   team?: ApplicationTeam | null;
   linkTeammates?: boolean;
+  canEditTravel?: boolean;
 };
 
 function externalLink(href: string, label: string) {
@@ -66,6 +67,7 @@ const ApplicationInfo = ({
   hideBackgroundInfo,
   team,
   linkTeammates,
+  canEditTravel,
 }: Props) => {
   if (!hacker) {
     return (
@@ -248,6 +250,38 @@ const ApplicationInfo = ({
                 value={hacker.travelFrom || <EmptyValue />}
                 icon={<Plane className="size-4" />}
               />
+              <InfoRow
+                label="Reimbursement decision"
+                value={
+                  hacker.travelDecision === "approved"
+                    ? "Approved"
+                    : hacker.travelDecision === "rejected"
+                      ? "Rejected"
+                      : "Not reviewed"
+                }
+                icon={<Plane className="size-4" />}
+              />
+              {hacker.travelDecision === "approved" && (
+                <InfoRow
+                  label="Approved amount"
+                  value={
+                    hacker.travelApprovedAmount != null ? (
+                      `$${hacker.travelApprovedAmount} CAD`
+                    ) : (
+                      <EmptyValue />
+                    )
+                  }
+                  icon={<Plane className="size-4" />}
+                />
+              )}
+              {canEditTravel && (
+                <Link
+                  href={`/reimbursements/review?userId=${hacker.userId}`}
+                  className="inline-flex px-2.5 text-sm text-primary underline-offset-4 hover:underline"
+                >
+                  Edit reimbursement
+                </Link>
+              )}
             </>
           )}
 

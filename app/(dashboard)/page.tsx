@@ -15,11 +15,11 @@ import {
   getTeamStats,
   getTopCountries,
   getTracks,
-  getTravelStats,
 } from "@/data/stats";
+import { cad, getReimbursementStats } from "@/data/reimbursements";
 import { getEventConfig, livePhase } from "@/lib/event-config";
 import type { EventConfig } from "@/lib/db/schema";
-import { isReviewer } from "@/lib/utils";
+import { isAdmin, isReviewer } from "@/lib/utils";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
@@ -38,13 +38,14 @@ const Home = async () => {
       getFunnel(),
       getApplicationsOverTime(),
       getTeamStats(),
-      getTravelStats(),
+      getReimbursementStats(),
       getPeople(),
       getTracks(),
       getTopCountries(5),
       getReviewTrend(),
       getEventConfig(),
     ]);
+  const travelHref = isAdmin(user.role) ? "/reimbursements" : undefined;
 
   const statusData = [
     { status: "pending", count: funnel.pending },
@@ -103,7 +104,7 @@ const Home = async () => {
 
         <section>
           <p className="mb-3 font-display text-2xl text-foreground">Needs attention</p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
             <AttentionCard
               href="/review-applications"
               label="Under 5 reviews"
@@ -123,9 +124,16 @@ const Home = async () => {
               detail="Spots that still need a yes or a release"
             />
             <AttentionCard
+              href={travelHref}
               label="Travel requested"
-              value={`$${travel.total.toLocaleString("en-CA")}`}
-              detail={`${travel.count} submitted requests`}
+              value={cad(travel.requestedTotal)}
+              detail={`${travel.requested} submitted requests`}
+            />
+            <AttentionCard
+              href={travelHref}
+              label="Travel approved"
+              value={cad(travel.approvedTotal)}
+              detail={`${travel.approved} approved · ${travel.approvedRsvp} RSVP'd · ${travel.approvedCheckedIn} checked in`}
             />
           </div>
         </section>
