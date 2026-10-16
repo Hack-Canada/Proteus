@@ -1,4 +1,6 @@
-import { formatDate, getResumeUrl } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
+import { mintResumeGrant } from "@/lib/storage/resume-grant";
+import { isStoredResumeKey } from "@/lib/storage/s3";
 import {
   User as UserIcon,
   Mail,
@@ -186,8 +188,15 @@ const ApplicationInfo = ({
           <InfoRow
             label="Resume"
             value={
-              hacker.resumeUrl ? (
-                externalLink(getResumeUrl(hacker.resumeUrl), "View resume")
+              hacker.resumeUrl && isStoredResumeKey(hacker.resumeUrl) ? (
+                <a
+                  href={`/api/resume/open?token=${encodeURIComponent(mintResumeGrant(hacker.resumeUrl))}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-primary underline-offset-4 transition-colors hover:text-primary/80 hover:underline"
+                >
+                  View resume <ExternalLink className="size-4" />
+                </a>
               ) : (
                 <EmptyValue />
               )

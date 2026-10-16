@@ -1,43 +1,71 @@
 import crypto from "node:crypto";
 
-type Grant = { key: string; exp: number };
+// Reviewers keep the application open and re-open the PDF. A signed token
+// stays valid across serverless instances; an in-memory grant would not.
+const TTL_MS = 3 * 60 * 60 * 1000;
 
-// ponytail: one Node process. A restart drops unused links (they last 60s).
-// Multiple servers would not share this map; move it to a shared store.
-const globalStore = globalThis as typeof globalThis & {
-  __resumeGrants?: Map<string, Grant>;
-};
-const grants = (globalStore.__resumeGrants ??= new Map());
-const TTL_MS = 60_000;
+function secret() {
+  const value = process.env.AUTH_SECRET;
+  if (!value) throw new Error("AUTH_SECRET is not set");
+  return value;
+}
 
-function sweep(now: number) {
-  for (const [token, grant] of grants) {
-    if (grant.exp <= now) grants.delete(token);
-  }
+function sign(payload: string) {
+  return crypto.createHmac("sha256", secret()).update(payload).digest("base64url");
 }
 
 export function mintResumeGrant(key: string) {
-  const now = Date.now();
-  sweep(now);
-  const token = crypto.randomBytes(24).toString("base64url");
-  grants.set(token, { key, exp: now + TTL_MS });
-  return token;
+  const payload = Buffer.from(
+    JSON.stringify({ key, exp: Date.now() + TTL_MS }),
+  ).toString("base64url");
+  return `${payload}.${sign(payload)}`;
 }
 
 export function takeResumeGrant(token: string) {
-  const grant = grants.get(token);
-  if (!grant) return null;
-  grants.delete(token);
-  if (grant.exp <= Date.now()) return null;
-  return grant.key;
+  const dot = token.indexOf(".");
+  if (dot <= 0) return null;
+  const payload = token.slice(0, dot);
+  const sig = token.slice(dot + 1);
+  const expected = sign(payload);
+  const actualBytes = Buffer.from(sig);
+  const expectedBytes = Buffer.from(expected);
+  if (
+    actualBytes.length !== expectedBytes.length ||
+    !crypto.timingSafeEqual(actualBytes, expectedBytes)
+  ) {
+    return null;
+  }
+
+  let body: { key?: unknown; exp?: unknown };
+  try {
+    body = JSON.parse(Buffer.from(payload, "base64url").toString());
+  } catch {
+    return null;
+  }
+  if (typeof body.key !== "string" || typeof body.exp !== "number") return null;
+  if (body.exp <= Date.now()) return null;
+  return body.key;
 }
 
 function selfCheck() {
-  const token = mintResumeGrant("resumes/user-1/a.pdf");
-  if (takeResumeGrant(token) !== "resumes/user-1/a.pdf") throw new Error("take");
-  if (takeResumeGrant(token) !== null) throw new Error("reuse");
-  grants.set("expired", { key: "resumes/user-1/a.pdf", exp: Date.now() - 1 });
-  if (takeResumeGrant("expired") !== null) throw new Error("expiry");
+  const previous = process.env.AUTH_SECRET;
+  process.env.AUTH_SECRET ??= "resume-grant-self-check";
+  try {
+    const token = mintResumeGrant("resumes/user-1/a.pdf");
+    if (takeResumeGrant(token) !== "resumes/user-1/a.pdf") throw new Error("read");
+    if (takeResumeGrant(token) !== "resumes/user-1/a.pdf") throw new Error("reuse");
+    if (takeResumeGrant(`${token}x`) !== null) throw new Error("tamper");
+
+    const payload = Buffer.from(
+      JSON.stringify({ key: "resumes/user-1/a.pdf", exp: Date.now() - 1 }),
+    ).toString("base64url");
+    if (takeResumeGrant(`${payload}.${sign(payload)}`) !== null) {
+      throw new Error("expiry");
+    }
+  } finally {
+    if (previous === undefined) delete process.env.AUTH_SECRET;
+    else process.env.AUTH_SECRET = previous;
+  }
 }
 
 selfCheck();
