@@ -1,3 +1,7 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Reviewer Stats" };
+
 import { getCurrentUser } from "@/auth";
 import { redirect } from "next/navigation";
 import { isAdmin } from "@/lib/utils";

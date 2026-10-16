@@ -5,6 +5,7 @@ import NextAuth, { DefaultSession } from "next-auth";
 import authConfig from "./auth.config";
 import { db } from "./lib/db";
 import { getUserByEmail, getUserById } from "./lib/db/queries/user";
+import { SESSION_COOKIE_NAME } from "./lib/constants";
 import { isReviewer } from "./lib/utils";
 
 declare module "next-auth" {
@@ -22,7 +23,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   cookies: {
     sessionToken: {
-      name: "authjs.session-token-admin",
+      name: SESSION_COOKIE_NAME,
     },
   },
   adapter: DrizzleAdapter(db),

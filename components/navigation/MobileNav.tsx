@@ -26,13 +26,13 @@ const MobileNav = () => {
         <div className="flex h-full flex-col">
           <div className="flex items-center gap-3 px-6 pb-8 pt-4">
             <Image
-              src="/logo.webp"
+              src="/hack-canada-logo.png"
               alt="Hack Canada Logo"
               width={32}
               height={32}
               className="translate-y-0.5"
             />
-            <p className="w-fit bg-gradient-to-r from-primary/80 to-primary bg-clip-text text-lg font-semibold text-transparent transition-colors dark:from-sky-500 dark:to-blue-500">
+            <p className="font-display text-2xl text-foreground">
               Hack Canada Admin
             </p>
           </div>

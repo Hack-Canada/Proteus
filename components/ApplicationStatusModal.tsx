@@ -119,7 +119,7 @@ const ApplicationStatusModal = ({
                 </p>
               </div>
               <div className="pt-4">
-                <Link href={`/applications/${userId}`}>
+                <Link href={`/applications/${userId}`} target="_blank" rel="noopener noreferrer">
                   <Button
                     variant="outline"
                     size="sm"

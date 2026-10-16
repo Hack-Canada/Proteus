@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { SchoolBarChart } from "./SchoolBarChart";
 import { hackerApplications } from "@/lib/db/schema";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 type Props = {};
 
@@ -12,6 +12,7 @@ const SchoolData = async ({}: Props) => {
       applicants: sql<number>`COUNT(${hackerApplications.userId})`,
     })
     .from(hackerApplications)
+    .where(eq(hackerApplications.submissionStatus, "submitted"))
     .groupBy(hackerApplications.school);
 
   return (

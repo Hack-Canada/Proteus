@@ -1,3 +1,7 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "User" };
+
 import { getCurrentUser } from "@/auth";
 import Container from "@/components/Container";
 import PageBanner from "@/components/PageBanner";
@@ -5,6 +9,10 @@ import UserActions from "@/components/UserActions";
 import UserInfo from "@/components/UserInfo";
 import UserReviewHistory from "@/components/UserReviewHistory";
 import { getUserById } from "@/data/user";
+import { getTeamForUser } from "@/data/teams";
+import { db } from "@/lib/db";
+import { checkIns, rsvp } from "@/lib/db/schema";
+import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import React from "react";
 
@@ -23,7 +31,23 @@ const UserPage = async (
     redirect("https://app.hackcanada.org/login");
   }
 
-  const user = await getUserById(id);
+  const [user, team, checkedInRows, rsvpRows] = await Promise.all([
+    getUserById(id),
+    getTeamForUser(id),
+    db
+      .select({ id: checkIns.id })
+      .from(checkIns)
+      .where(and(eq(checkIns.userId, id), eq(checkIns.eventName, "hackathon-check-in")))
+      .limit(1),
+    db
+      .select({
+        dietaryRestrictions: rsvp.dietaryRestrictions,
+        tshirtSize: rsvp.tshirtSize,
+      })
+      .from(rsvp)
+      .where(eq(rsvp.userId, id))
+      .limit(1),
+  ]);
 
   if (!user) {
     return null;
@@ -38,7 +62,12 @@ const UserPage = async (
       />
       <div className="flex space-y-6 max-xl:flex-col md:space-y-8 xl:space-x-8 xl:space-y-0">
         <div className="w-full space-y-6 md:space-y-8 xl:max-w-screen-md">
-          <UserInfo user={user} />
+          <UserInfo
+            user={user}
+            team={team}
+            checkedIn={checkedInRows.length > 0}
+            rsvpDetails={rsvpRows[0] ?? null}
+          />
           <UserReviewHistory userId={user.id} />
         </div>
         {user && (

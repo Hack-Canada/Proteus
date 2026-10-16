@@ -1,394 +1,265 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Home" };
+
 import { getCurrentUser } from "@/auth";
 import Container from "@/components/Container";
-import PageBanner from "@/components/PageBanner";
-import { db } from "@/lib/db";
-import {
-  hackerApplications,
-  applicationReviews,
-  users,
-  checkIns,
-  rsvp,
-} from "@/lib/db/schema";
 import DashboardCharts from "@/components/DashboardCharts";
-import { isReviewer } from "@/lib/utils";
-import { and, count, eq, sql, gte, isNotNull } from "drizzle-orm";
+import PageBanner from "@/components/PageBanner";
 import { trackLabel } from "@/config/apply";
+import { DASHBOARD_REVALIDATE_SECONDS } from "@/lib/constants";
+import {
+  getApplicationsOverTime,
+  getFunnel,
+  getPeople,
+  getReviewTrend,
+  getTeamStats,
+  getTopCountries,
+  getTracks,
+  getTravelStats,
+} from "@/data/stats";
+import { getEventConfig, livePhase } from "@/lib/event-config";
+import type { EventConfig } from "@/lib/db/schema";
+import { isReviewer } from "@/lib/utils";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
-export const revalidate = 60;
+export const revalidate = DASHBOARD_REVALIDATE_SECONDS;
 
 const Home = async () => {
   const user = await getCurrentUser();
 
-  if (!user?.id) {
-    redirect("/");
+  if (!user?.id || !isReviewer(user.role)) {
+    redirect("/login");
   }
 
-  if (!isReviewer(user.role)) redirect("https://app.hackcanada.org");
-
-  const [
-    [dbUsers],
-    [applicants],
-    [hackers],
-    [checkedIns],
-    [accepted],
-    [rejected],
-    [pendingApplications],
-    [waitlisted],
-    [cancelled],
-    [admins],
-    [organizers],
-    [mentorsCount],
-    [volunteersCount],
-    [totalReviews],
-    [avgRating],
-    [avgReviewCount],
-    [avgReviewDuration],
-    [rsvpCount],
-    [uniqueSchools],
-    [uniqueCountries],
-    topSchoolResult,
-    trackBreakdown,
-    [travelRequests],
-    countryBreakdown,
-  ] = await Promise.all([
-    db.select({ count: count() }).from(users),
-    db
-      .select({ count: count() })
-      .from(hackerApplications)
-      .where(eq(hackerApplications.submissionStatus, "submitted")),
-    db.select({ count: count() }).from(users).where(eq(users.role, "hacker")),
-    db
-      .select({ count: count() })
-      .from(checkIns)
-      .where(eq(checkIns.eventName, "hackathon-check-in")),
-    db
-      .select({ count: count() })
-      .from(users)
-      .where(eq(users.applicationStatus, "accepted")),
-    db
-      .select({ count: count() })
-      .from(users)
-      .where(eq(users.applicationStatus, "rejected")),
-    db
-      .select({ count: count() })
-      .from(users)
-      .where(eq(users.applicationStatus, "pending")),
-    db
-      .select({ count: count() })
-      .from(users)
-      .where(eq(users.applicationStatus, "waitlisted")),
-    db
-      .select({ count: count() })
-      .from(users)
-      .where(eq(users.applicationStatus, "cancelled")),
-    db.select({ count: count() }).from(users).where(eq(users.role, "admin")),
-    db
-      .select({ count: count() })
-      .from(users)
-      .where(eq(users.role, "organizer")),
-    db
-      .select({ count: count() })
-      .from(users)
-      .where(eq(users.role, "mentor")),
-    db
-      .select({ count: count() })
-      .from(users)
-      .where(eq(users.role, "volunteer")),
-    db.select({ count: count() }).from(applicationReviews),
-    db
-      .select({
-        avg: sql<number>`ROUND(AVG(${applicationReviews.rating})::numeric, 2)`,
-      })
-      .from(applicationReviews)
-      .where(isNotNull(applicationReviews.rating)),
-    db
-      .select({
-        avg: sql<number>`ROUND(AVG(${hackerApplications.reviewCount})::numeric, 2)`,
-      })
-      .from(hackerApplications)
-      .where(eq(hackerApplications.submissionStatus, "submitted")),
-    db
-      .select({
-        avg: sql<number>`ROUND(AVG(${applicationReviews.reviewDuration})::numeric, 2)`,
-      })
-      .from(applicationReviews)
-      .where(isNotNull(applicationReviews.reviewDuration)),
-    db.select({ count: count() }).from(rsvp),
-    db
-      .select({
-        count: sql<number>`COUNT(DISTINCT ${hackerApplications.school})`,
-      })
-      .from(hackerApplications)
-      .where(isNotNull(hackerApplications.school)),
-    db
-      .select({
-        count: sql<number>`COUNT(DISTINCT ${hackerApplications.country})`,
-      })
-      .from(hackerApplications)
-      .where(isNotNull(hackerApplications.country)),
-    db
-      .select({
-        school: hackerApplications.school,
-        applicants: sql<number>`COUNT(${hackerApplications.userId})`,
-      })
-      .from(hackerApplications)
-      .where(isNotNull(hackerApplications.school))
-      .groupBy(hackerApplications.school)
-      .orderBy(sql`COUNT(${hackerApplications.userId}) DESC`)
-      .limit(1),
-    db
-      .select({
-        applicationType: hackerApplications.applicationType,
-        applicants: sql<number>`COUNT(${hackerApplications.userId})`,
-      })
-      .from(hackerApplications)
-      .where(eq(hackerApplications.submissionStatus, "submitted"))
-      .groupBy(hackerApplications.applicationType)
-      .orderBy(sql`COUNT(${hackerApplications.userId}) DESC`),
-    db
-      .select({ count: count() })
-      .from(hackerApplications)
-      .where(
-        and(
-          eq(hackerApplications.submissionStatus, "submitted"),
-          eq(hackerApplications.needsTravelReimbursement, true),
-        ),
-      ),
-    db
-      .select({
-        country: hackerApplications.country,
-        applicants: sql<number>`COUNT(${hackerApplications.userId})`,
-      })
-      .from(hackerApplications)
-      .where(isNotNull(hackerApplications.country))
-      .groupBy(hackerApplications.country)
-      .orderBy(sql`COUNT(${hackerApplications.userId}) DESC`)
-      .limit(5),
-  ]);
-
-  const volunteers = volunteersCount.count;
-  const mentors = mentorsCount.count;
-  const topSchool = topSchoolResult[0];
-
-  const acceptanceRate =
-    applicants.count > 0
-      ? ((accepted.count / applicants.count) * 100).toFixed(1)
-      : "0";
+  const [funnel, overTime, teams, travel, people, tracks, countries, reviewTrend, config] =
+    await Promise.all([
+      getFunnel(),
+      getApplicationsOverTime(),
+      getTeamStats(),
+      getTravelStats(),
+      getPeople(),
+      getTracks(),
+      getTopCountries(5),
+      getReviewTrend(),
+      getEventConfig(),
+    ]);
 
   const statusData = [
-    { status: "pending", count: pendingApplications.count },
-    { status: "accepted", count: accepted.count },
-    { status: "rejected", count: rejected.count },
-    { status: "waitlisted", count: waitlisted.count },
-    { status: "cancelled", count: cancelled.count },
+    { status: "pending", count: funnel.pending },
+    { status: "accepted", count: funnel.accepted },
+    { status: "rejected", count: funnel.rejected },
+    { status: "waitlisted", count: funnel.waitlisted },
+    { status: "cancelled", count: funnel.cancelled },
   ];
-
-  const fourteenDaysAgo = new Date();
-  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
-
-  const reviewTrendRaw = await db
-    .select({
-      date: sql<string>`TO_CHAR(${applicationReviews.createdAt}, 'MM/DD')`,
-      count: count(),
-    })
-    .from(applicationReviews)
-    .where(gte(applicationReviews.createdAt, fourteenDaysAgo))
-    .groupBy(
-      sql`TO_CHAR(${applicationReviews.createdAt}, 'MM/DD')`,
-      sql`DATE(${applicationReviews.createdAt})`,
-    )
-    .orderBy(sql`DATE(${applicationReviews.createdAt})`);
-
-  const reviewTrend = reviewTrendRaw.map((r) => ({
-    date: r.date,
-    count: r.count,
-  }));
 
   return (
     <Container>
       <PageBanner
         heading="Overview"
         className="mb-6 md:mb-8"
-        subheading="Welcome to the official dashboard of Hack Canada. Below is a quick overview of our hackathon's statistics so far."
+        subheading="Where applications, reviews, and the event stand right now."
       />
 
       <div className="flex flex-col gap-8">
-        {/* Users & Roles */}
-        <section>
-          <p className="mb-3 text-lg font-bold text-foreground md:text-xl">
-            Users
-          </p>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            <InsightCard label="Total Users" value={dbUsers.count} />
-            <InsightCard label="Hackers" value={hackers.count} />
-            <InsightCard label="Admins" value={admins.count} />
-            <InsightCard label="Organizers" value={organizers.count} />
-            <InsightCard label="Mentors" value={mentors} />
-            <InsightCard label="Volunteers" value={volunteers} />
-            <InsightCard label="Checked In" value={checkedIns.count} />
-            <InsightCard label="RSVPs" value={rsvpCount.count} />
-          </div>
-        </section>
+        {config && config !== "missing" && <PhaseBanner config={config} />}
 
-        {/* Applications */}
         <section>
-          <p className="mb-3 text-lg font-bold text-foreground md:text-xl">
-            Applications
-          </p>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            <InsightCard label="Submitted" value={applicants.count} />
-            <InsightCard label="Accepted" value={accepted.count} />
-            <InsightCard label="Rejected" value={rejected.count} />
-            <InsightCard label="Pending" value={pendingApplications.count} />
-            <InsightCard label="Waitlisted" value={waitlisted.count} />
-            <InsightCard label="Cancelled" value={cancelled.count} />
-            <InsightCard label="Acceptance Rate" value={`${acceptanceRate}%`} />
-            <InsightCard label="Unique Schools" value={uniqueSchools.count} />
-            <InsightCard label="Countries" value={uniqueCountries.count} />
+          <p className="mb-3 font-display text-2xl text-foreground">Funnel</p>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
             <InsightCard
-              label="Travel Requests"
-              value={travelRequests.count}
+              label="Drafts"
+              value={funnel.draft}
+              subtitle={`${share(funnel.draft, funnel.draft + funnel.submitted)} of apps`}
             />
             <InsightCard
-              label="Top School"
-              value={topSchool?.school ?? "N/A"}
-              subtitle={
-                topSchool ? `${topSchool.applicants} applicants` : undefined
-              }
-              isText
+              label="Submitted"
+              value={funnel.submitted}
+              subtitle={`${share(funnel.submitted, funnel.draft + funnel.submitted)} of apps`}
+            />
+            <InsightCard
+              label="Fully reviewed"
+              value={funnel.reviewed}
+              subtitle={`${funnel.reviewCoverage.toFixed(0)}% of submitted`}
+            />
+            <InsightCard
+              label="Accepted"
+              value={funnel.accepted}
+              subtitle={`${funnel.acceptanceRate.toFixed(0)}% of submitted`}
+            />
+            <InsightCard
+              label="RSVPs"
+              value={funnel.rsvp}
+              subtitle={`${funnel.rsvpRate.toFixed(0)}% of accepted`}
+            />
+            <InsightCard
+              label="Checked in"
+              value={funnel.checkedIn}
+              subtitle={`${funnel.checkInRate.toFixed(0)}% of RSVPs`}
             />
           </div>
         </section>
 
-        {/* Review Statistics */}
         <section>
-          <p className="mb-3 text-lg font-bold text-foreground md:text-xl">
-            Reviews
-          </p>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            <InsightCard label="Total Reviews" value={totalReviews.count} />
-            <InsightCard label="Avg Rating" value={avgRating.avg ?? "N/A"} />
-            <InsightCard
-              label="Avg Reviews / App"
-              value={avgReviewCount.avg ?? "N/A"}
+          <p className="mb-3 font-display text-2xl text-foreground">Needs attention</p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <AttentionCard
+              href="/review-applications"
+              label="Under 5 reviews"
+              value={funnel.needsReviews}
+              detail="Submitted and still in the review queue"
             />
-            <InsightCard
-              label="Avg Time / Review (s)"
-              value={avgReviewDuration.avg ?? "N/A"}
+            <AttentionCard
+              href="/review-applications/decisions"
+              label="Reviewed, not decided"
+              value={funnel.reviewedUndecided}
+              detail="Five reviews in, status still pending"
+            />
+            <AttentionCard
+              href="/rsvps"
+              label="Accepted, no RSVP"
+              value={funnel.awaitingRsvp}
+              detail="Spots that still need a yes or a release"
+            />
+            <AttentionCard
+              label="Travel requested"
+              value={`$${travel.total.toLocaleString("en-CA")}`}
+              detail={`${travel.count} submitted requests`}
             />
           </div>
         </section>
 
-        {/* Demographics at a Glance */}
-        <section>
-          <p className="mb-3 text-lg font-bold text-foreground md:text-xl">
-            Demographics
-          </p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded-lg border p-5">
-              <p className="mb-3 text-sm font-semibold text-foreground">
-                Application Tracks
-              </p>
-              <div className="space-y-2">
-                {trackBreakdown.map(({ applicationType, applicants: gCount }) => {
-                  const pct =
-                    applicants.count > 0
-                      ? ((gCount / applicants.count) * 100).toFixed(1)
-                      : "0";
-                  return (
-                    <div key={applicationType ?? "none"} className="flex items-center gap-3">
-                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-full rounded-full bg-primary"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <span className="w-24 truncate text-xs">
-                        {trackLabel(applicationType)}
-                      </span>
-                      <span className="w-16 text-right text-xs font-medium tabular-nums">
-                        {gCount} ({pct}%)
-                      </span>
+        <section className="grid gap-4 lg:grid-cols-3">
+          <div className="rounded-3xl border p-5 dark:border-white/[0.06]">
+            <p className="mb-3 text-sm font-medium text-muted-foreground">People</p>
+            <p className="font-display text-4xl">{people.total}</p>
+            <ul className="mt-4 space-y-1 text-sm">
+              {Object.entries(people.byRole)
+                .sort((a, b) => b[1] - a[1])
+                .map(([role, count]) => (
+                  <li key={role} className="flex justify-between capitalize">
+                    <span>{role.replaceAll("_", " ")}</span>
+                    <span className="tabular-nums">{count}</span>
+                  </li>
+                ))}
+            </ul>
+          </div>
+          <div className="rounded-3xl border p-5 dark:border-white/[0.06]">
+            <p className="mb-3 text-sm font-medium text-muted-foreground">Teams</p>
+            <p className="font-display text-4xl">{teams.teams}</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Avg size {teams.averageSize.toFixed(1)} · {teams.fullTeams} full ·{" "}
+              {teams.teamApplicants} team apps, {teams.soloApplicants} solo
+            </p>
+          </div>
+          <div className="rounded-3xl border p-5 dark:border-white/[0.06]">
+            <p className="mb-3 text-sm font-medium text-muted-foreground">Tracks</p>
+            <div className="space-y-2">
+              {tracks.map(({ applicationType, applicants }) => {
+                const width = share(Number(applicants), funnel.submitted);
+                return (
+                  <div key={applicationType ?? "none"} className="flex items-center gap-3 text-sm">
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                      <div className="h-full rounded-full bg-primary" style={{ width }} />
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="rounded-lg border p-5">
-              <p className="mb-3 text-sm font-semibold text-foreground">
-                Top Countries
-              </p>
-              <div className="space-y-2">
-                {countryBreakdown.map(
-                  ({ country, applicants: cCount }, i) => (
-                    <div
-                      key={country}
-                      className="flex items-center justify-between text-sm"
-                    >
-                      <span className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-muted-foreground">
-                          {i + 1}.
-                        </span>
-                        <span className="truncate">
-                          {country || "Not specified"}
-                        </span>
-                      </span>
-                      <span className="shrink-0 font-medium tabular-nums">
-                        {cCount}
-                      </span>
-                    </div>
-                  ),
-                )}
-              </div>
+                    <span className="w-20 truncate">{trackLabel(applicationType)}</span>
+                    <span className="w-8 text-right tabular-nums">{applicants}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
 
-        {/* Charts */}
-        <section>
-          <p className="mb-3 text-lg font-bold text-foreground md:text-xl">
-            Charts
-          </p>
-          <DashboardCharts statusData={statusData} reviewTrend={reviewTrend} />
-        </section>
+        <DashboardCharts
+          statusData={statusData}
+          reviewTrend={reviewTrend}
+          applicationTrend={overTime}
+          countries={countries}
+        />
       </div>
     </Container>
   );
 };
 
+function PhaseBanner({ config }: { config: EventConfig }) {
+  const now = new Date();
+  const phase = livePhase(config, now);
+  const next = (
+    [
+      ["Registration opens", config.registrationOpen],
+      ["Registration closes", config.registrationClose],
+      ["Event starts", config.eventStart],
+      ["Event ends", config.eventEnd],
+    ] as const
+  ).find(([, date]) => date.getTime() > now.getTime());
+
+  const countdown = next ? formatCountdown(next[1], now) : null;
+
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-3 rounded-3xl border bg-card px-6 py-5 dark:border-white/[0.06]">
+      <div>
+        <p className="text-sm text-muted-foreground">Current phase</p>
+        <p className="font-display text-3xl capitalize">{phase.replaceAll("-", " ")}</p>
+      </div>
+      {next && countdown && (
+        <p className="text-sm text-muted-foreground">
+          {next[0]} in <span className="font-medium text-foreground">{countdown}</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
+function formatCountdown(target: Date, now: Date) {
+  const hours = Math.max(0, Math.round((target.getTime() - now.getTime()) / 36e5));
+  const days = Math.floor(hours / 24);
+  return days > 0 ? `${days}d ${hours % 24}h` : `${hours}h`;
+}
+
+function share(part: number, whole: number) {
+  if (whole <= 0) return "0%";
+  return `${Math.round((part / whole) * 100)}%`;
+}
+
 function InsightCard({
   label,
   value,
   subtitle,
-  isText,
 }: {
   label: string;
   value: string | number;
   subtitle?: string;
-  isText?: boolean;
 }) {
   return (
-    <div className="rounded-lg border py-5 text-center">
-      <p className="text-xs font-semibold text-muted-foreground md:text-sm">
-        {label}
-      </p>
-      <p
-        className={
-          isText
-            ? "mt-1 truncate px-3 text-sm font-bold text-foreground md:text-base"
-            : "mt-1 text-xl font-bold text-foreground md:text-2xl xl:text-3xl"
-        }
-        title={String(value)}
-      >
-        {value}
-      </p>
-      {subtitle && (
-        <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
-      )}
+    <div className="rounded-3xl border px-3 py-5 text-center dark:border-white/[0.06]">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="mt-1 text-2xl font-bold tabular-nums text-foreground md:text-3xl">{value}</p>
+      {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
     </div>
   );
+}
+
+function AttentionCard({
+  href,
+  label,
+  value,
+  detail,
+}: {
+  href?: string;
+  label: string;
+  value: string | number;
+  detail: string;
+}) {
+  const body = (
+    <div className="h-full rounded-3xl border p-5 transition-colors hover:bg-accent/40 dark:border-white/[0.06]">
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="mt-1 font-display text-4xl">{value}</p>
+      <p className="mt-2 text-xs text-muted-foreground">{detail}</p>
+    </div>
+  );
+  return href ? <Link href={href}>{body}</Link> : body;
 }
 
 export default Home;

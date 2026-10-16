@@ -92,7 +92,7 @@ const ApplicationInfo = ({
       <hr className="mb-4" />
       <CardContent>
         <div className="grid w-full gap-y-3">
-          <h3 className="mt-2 text-lg font-semibold">Basics</h3>
+          <h3 className="mt-2 font-display text-2xl">Basics</h3>
           {!hideBackgroundInfo && (
             <InfoRow
               label="ID"
@@ -144,7 +144,7 @@ const ApplicationInfo = ({
             />
           )}
 
-          <h3 className="mt-4 text-lg font-semibold">Socials and resume</h3>
+          <h3 className="mt-6 font-display text-2xl">Socials and resume</h3>
           <InfoRow
             label="Portfolio"
             value={
@@ -209,7 +209,7 @@ const ApplicationInfo = ({
             icon={<FileCheck className="size-4" />}
           />
 
-          <h3 className="mt-4 text-lg font-semibold">MLH and travel</h3>
+          <h3 className="mt-6 font-display text-2xl">MLH and travel</h3>
           <InfoRow
             label="MLH Code of Conduct"
             value={agreed(hacker.mlhCheckbox1)}
@@ -253,7 +253,7 @@ const ApplicationInfo = ({
 
           {hacker.applicationType === "normal" && (
             <>
-              <h3 className="mt-4 text-lg font-semibold">Short answers</h3>
+              <h3 className="mt-6 font-display text-2xl">Short answers</h3>
               <InfoRow
                 label={NORMAL_PROMPTS.normalAnswer1}
                 value={
@@ -279,10 +279,21 @@ const ApplicationInfo = ({
 
           {team && (
             <>
-              <h3 className="mt-4 text-lg font-semibold">Team answers</h3>
+              <h3 className="mt-6 font-display text-2xl">Team answers</h3>
               <InfoRow
                 label="Team"
-                value={team.name}
+                value={
+                  linkTeammates ? (
+                    <Link
+                      href={`/teams/${team.id}`}
+                      className="text-primary underline-offset-4 hover:underline"
+                    >
+                      {team.name}
+                    </Link>
+                  ) : (
+                    team.name
+                  )
+                }
                 icon={<Users className="size-4" />}
               />
               <InfoRow
@@ -317,6 +328,8 @@ const ApplicationInfo = ({
                       linkTeammates && !isCurrent ? (
                         <Link
                           href={`/applications/${member.userId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 text-primary underline-offset-4 hover:underline"
                         >
                           {name}
@@ -341,7 +354,7 @@ const ApplicationInfo = ({
 
           {!hideBackgroundInfo && (
             <>
-              <h3 className="mt-4 text-lg font-semibold">
+              <h3 className="mt-6 font-display text-2xl">
                 Application Details
               </h3>
               <InfoRow

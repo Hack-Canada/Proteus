@@ -1,3 +1,7 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Review Application" };
+
 import { getCurrentUser } from "@/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
@@ -11,6 +15,7 @@ import { Suspense } from "react";
 import { isReviewer } from "@/lib/utils";
 import LoadingApplication from "./loading-application";
 import LoadingStats from "./loading-stats";
+import { REVIEWS_PER_APP } from "@/lib/constants";
 
 interface ReviewStats {
   totalReviews: number;
@@ -31,7 +36,7 @@ export default async function ReviewsPage() {
       .from(hackerApplications)
       .where(
         and(
-          lt(hackerApplications.reviewCount, 5),
+          lt(hackerApplications.reviewCount, REVIEWS_PER_APP),
           eq(hackerApplications.submissionStatus, "submitted"),
           eq(hackerApplications.internalResult, "pending"),
           sql`NOT EXISTS (

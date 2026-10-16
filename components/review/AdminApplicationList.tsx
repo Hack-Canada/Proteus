@@ -271,6 +271,8 @@ export default function AdminApplicationList({
                     <Link
                       className="group relative flex w-fit items-center gap-1.5"
                       href={`/applications/${application.userId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                     >
                       {application.firstName} {application.lastName}
                       <ExternalLink size={16} />

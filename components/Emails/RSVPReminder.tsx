@@ -13,7 +13,7 @@ import {
   Text,
 } from "@react-email/components";
 import { Tailwind } from "@react-email/tailwind";
-import { hackathonYear } from "@/config/site";
+import { eventVenue, hackathonYear, rsvpDeadlineLabel } from "@/config/site";
 
 type Props = { name: string };
 
@@ -116,7 +116,7 @@ const RSVPReminder = ({ name }: Props) => (
                 margin: "0 0 24px 0",
               }}
             >
-              Please RSVP by tonight (March 5th, 2026 at 11:59 PM EST) if you
+              Please RSVP by tonight ({rsvpDeadlineLabel}) if you
               would still like to join us for the hackathon. If we don&apos;t
               hear back from you, we may have to release your spot to someone on
               the waitlist.
@@ -172,9 +172,8 @@ const RSVPReminder = ({ name }: Props) => (
                 margin: "0 0 16px 0",
               }}
             >
-              Just a reminder that Hack Canada is happening tomorrow at SPUR
-              Campus - Spur Innovation Center (2240 University Ave, Waterloo).
-              Check-ins start at 4:00 PM!
+              Just a reminder that Hack Canada is happening tomorrow at{" "}
+              {eventVenue}. Check-ins start at 4:00 PM!
             </Text>
 
             <Text
@@ -186,8 +185,8 @@ const RSVPReminder = ({ name }: Props) => (
               }}
             >
               If you have decided not to attend Hack Canada, please use the
-              Cancel RSVP button above to let us know before 11:59 PM EST on
-              March 5th. This will help us offer your spot to someone on our
+              Cancel RSVP button above to let us know before {rsvpDeadlineLabel}.
+              This will help us offer your spot to someone on our
               waitlist who is eager to participate.
             </Text>
 

@@ -32,6 +32,8 @@ export function LogCard({
       return (
         <Link
           href={`/applications/${entityId}`}
+          target="_blank"
+          rel="noopener noreferrer"
           className="text-sm text-primary hover:underline"
         >
           ID: {entityId}

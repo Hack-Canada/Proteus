@@ -19,9 +19,12 @@ import EmergencyContactInfo from "./EmergencyContactInfo";
 
 type Props = {
   user: UserWithAccounts;
+  team?: { id: string; name: string } | null;
+  checkedIn?: boolean;
+  rsvpDetails?: { dietaryRestrictions: string | null; tshirtSize: string } | null;
 };
 
-const UserInfo = async ({ user }: Props) => {
+const UserInfo = async ({ user, team, checkedIn, rsvpDetails }: Props) => {
   if (!user) {
     return (
       <Card className="border-destructive/50 bg-destructive/10">
@@ -89,6 +92,39 @@ const UserInfo = async ({ user }: Props) => {
             value={formatDate(user.createdAt.toString())}
             icon={<Calendar className="size-4" />}
           />
+          {team && (
+            <InfoRow
+              label="Team"
+              value={
+                <Link
+                  href={`/teams/${team.id}`}
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  {team.name}
+                </Link>
+              }
+              icon={<UserCheck className="size-4" />}
+            />
+          )}
+          <InfoRow
+            label="Checked in"
+            value={checkedIn ? "Yes" : "No"}
+            icon={<UserCheck className="size-4" />}
+          />
+          {rsvpDetails && (
+            <>
+              <InfoRow
+                label="T-shirt"
+                value={rsvpDetails.tshirtSize}
+                icon={<FileCheck className="size-4" />}
+              />
+              <InfoRow
+                label="Dietary restrictions"
+                value={rsvpDetails.dietaryRestrictions?.trim() || "None"}
+                icon={<FileCheck className="size-4" />}
+              />
+            </>
+          )}
           <InfoRow
             label="RSVP Status"
             value={
@@ -106,6 +142,8 @@ const UserInfo = async ({ user }: Props) => {
               value={
                 <Link
                   href={`/applications/${user.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 text-primary underline-offset-4 transition-colors hover:text-primary/80 hover:underline"
                 >
                   Click to view{" "}

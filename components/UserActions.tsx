@@ -42,7 +42,7 @@ const UserActions = ({ id, name, email, status }: Props) => {
             variant="default"
             className="group w-full gap-2 text-base transition-all"
           >
-            <Link href={`/applications/${id}`}>
+            <Link href={`/applications/${id}`} target="_blank" rel="noopener noreferrer">
               <FileText className="size-4 transition-transform group-hover:-translate-y-0.5" />
               View Application
               <ArrowUpRightFromSquare className="size-3.5 opacity-60" />

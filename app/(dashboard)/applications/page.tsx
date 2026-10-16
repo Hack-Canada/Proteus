@@ -1,3 +1,7 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Applications" };
+
 import Container from "@/components/Container";
 import DownloadOptions from "@/components/DownloadOptions";
 import PageBanner from "@/components/PageBanner";

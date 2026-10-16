@@ -1,3 +1,7 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Application" };
+
 import { getCurrentUser } from "@/auth";
 import Container from "@/components/Container";
 import HackerApplicationStatus from "@/components/HackerApplicationStatus";

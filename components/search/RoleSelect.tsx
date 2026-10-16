@@ -20,8 +20,8 @@ const roles = [
   { value: "unassigned", label: "Unassigned" },
   { value: "hacker", label: "Hacker" },
   { value: "mentor", label: "Mentor" },
-  { value: "sponsor", label: "Sponsor" },
   { value: "volunteer", label: "Volunteer" },
+  { value: "judge", label: "Judge" },
   { value: "admin", label: "Admin" },
   { value: "organizer", label: "Organizer" },
 ] as const;
