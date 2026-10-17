@@ -7,7 +7,8 @@ import {
   type SaveTravelState,
 } from "@/app/(dashboard)/reimbursements/actions";
 import { Button } from "@/components/ui/button";
-import { TRAVEL_CAP, cad, type TravelCaseMember } from "@/data/reimbursements";
+import type { TravelCaseMember } from "@/data/reimbursements";
+import { TRAVEL_CAP, bandOf, cad, formatKm } from "@/lib/travel";
 
 type RowState = {
   userId: string;
@@ -18,7 +19,13 @@ type RowState = {
   applicationStatus: string;
   requestedChanged: boolean;
   approvedAmount: number | null;
+  from: string;
 };
+
+function fromLine(person: TravelCaseMember) {
+  if (!person.place) return `From ${person.application?.travelFrom?.trim() || "—"}`;
+  return `From ${person.place.label} · ${formatKm(person.place.km)} away (${bandOf(person.place.km)})`;
+}
 
 function initialRows(people: TravelCaseMember[]): RowState[] {
   return people.map((person) => ({
@@ -30,6 +37,7 @@ function initialRows(people: TravelCaseMember[]): RowState[] {
     applicationStatus: person.applicationStatus,
     requestedChanged: person.requestedChanged,
     approvedAmount: person.approvedAmount,
+    from: fromLine(person),
   }));
 }
 
@@ -108,6 +116,7 @@ export default function TravelReviewForm({
             <p className="text-xs text-muted-foreground">
               Asked for {cad(row.requested)} · application {row.applicationStatus.replaceAll("_", " ")}
             </p>
+            <p className="text-xs text-muted-foreground">{row.from}</p>
             {row.requestedChanged && row.approvedAmount != null && (
               <p className="mt-1 text-xs text-primary">
                 Requested changed. Approved amount on file is {cad(row.approvedAmount)}.

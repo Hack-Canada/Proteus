@@ -9,208 +9,19 @@ import {
   users,
   type HackerApplicationsSelectData,
 } from "@/lib/db/schema";
-
-export const TRAVEL_CAP = 200;
-
-export const TRAVEL_REGIONS = [
-  "GTA",
-  "Ontario",
-  "Other Canada",
-  "USA",
-  "International",
-] as const;
-
-export type TravelRegion = (typeof TRAVEL_REGIONS)[number];
-
-export const AMOUNT_BUCKETS = [
-  { label: "$0–50", min: 0, max: 50 },
-  { label: "$51–100", min: 51, max: 100 },
-  { label: "$101–150", min: 101, max: 150 },
-  { label: "$151–200", min: 151, max: 200 },
-] as const;
+import { geocodeMany, travelQuery, type Place } from "@/lib/geocode";
+import {
+  AMOUNT_BUCKETS,
+  DISTANCE_BANDS,
+  amountBucket,
+  bandOf,
+  type DistanceBand,
+} from "@/lib/travel";
 
 const eligible = and(
   eq(hackerApplications.submissionStatus, "submitted"),
   eq(hackerApplications.needsTravelReimbursement, true),
 );
-
-// ponytail: keyword heuristic on free-text "where from" plus the application country.
-// Ceiling: unlisted cities and a bare "London" outside Canada fall through to the country.
-// Upgrade path: geocode and cache coordinates.
-const GTA = [
-  "toronto",
-  "mississauga",
-  "brampton",
-  "markham",
-  "vaughan",
-  "scarborough",
-  "north york",
-  "etobicoke",
-  "richmond hill",
-  "oakville",
-];
-
-const ONTARIO = [
-  "ontario",
-  "waterloo",
-  "ottawa",
-  "kingston",
-  "hamilton",
-  "guelph",
-  "windsor",
-  "kitchener",
-  "cambridge",
-  "london",
-  "barrie",
-  "niagara",
-];
-
-const OTHER_CANADA = [
-  "british columbia",
-  "vancouver",
-  "kelowna",
-  "victoria",
-  "alberta",
-  "edmonton",
-  "calgary",
-  "saskatchewan",
-  "regina",
-  "saskatoon",
-  "manitoba",
-  "winnipeg",
-  "quebec",
-  "québec",
-  "montreal",
-  "montréal",
-  "new brunswick",
-  "fredericton",
-  "nova scotia",
-  "halifax",
-  "prince edward",
-  "newfoundland",
-  "yukon",
-  "nunavut",
-  "bc",
-  "ab",
-  "sk",
-  "mb",
-  "qc",
-  "nb",
-  "ns",
-  "pe",
-  "nl",
-];
-
-const CITY_SUFFIXES = [
-  "newfoundland and labrador",
-  "prince edward island",
-  "british columbia",
-  "new brunswick",
-  "nova scotia",
-  "saskatchewan",
-  "north carolina",
-  "newfoundland",
-  "manitoba",
-  "ontario",
-  "alberta",
-  "quebec",
-  "québec",
-  "nigeria",
-  "florida",
-  "oregon",
-  "bc",
-  "ab",
-  "sk",
-  "mb",
-  "on",
-  "qc",
-  "nb",
-  "ns",
-  "pe",
-  "nl",
-  "nc",
-  "or",
-  "fl",
-  "pk",
-];
-
-function hasTerm(text: string, term: string) {
-  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`(?:^|[^a-z])${escaped}(?:$|[^a-z])`).test(text);
-}
-
-function clean(value: string | null | undefined) {
-  return (value ?? "").toLowerCase().replace(/\./g, "").replace(/\s+/g, " ").trim();
-}
-
-function isCanada(country: string | null | undefined) {
-  const value = clean(country);
-  return value === "canada" || value === "ca";
-}
-
-function isUsa(country: string | null | undefined) {
-  const value = clean(country);
-  return (
-    value === "united states" ||
-    value === "united states of america" ||
-    value === "usa" ||
-    value === "us"
-  );
-}
-
-export function regionOf(
-  country: string | null | undefined,
-  travelFrom: string | null | undefined,
-): TravelRegion {
-  const from = clean(travelFrom);
-  if (GTA.some((term) => hasTerm(from, term))) return "GTA";
-
-  const ontarioHit = ONTARIO.some((term) => hasTerm(from, term)) || hasTerm(from, "on");
-  const onlyLondon =
-    hasTerm(from, "london") &&
-    !hasTerm(from, "ontario") &&
-    !hasTerm(from, "on") &&
-    !ONTARIO.some((term) => term !== "london" && hasTerm(from, term));
-  if (ontarioHit && !(onlyLondon && country?.trim() && !isCanada(country))) {
-    return "Ontario";
-  }
-
-  if (OTHER_CANADA.some((term) => hasTerm(from, term))) return "Other Canada";
-  if (isUsa(country)) return "USA";
-  if (isCanada(country)) return "Other Canada";
-  return "International";
-}
-
-export function normalizeCity(travelFrom: string | null | undefined) {
-  let text = clean(travelFrom);
-  let previous = "";
-  while (text && text !== previous) {
-    previous = text;
-    const suffix = CITY_SUFFIXES.find((item) =>
-      new RegExp(`(?:,\\s*|\\s+)${item.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`).test(text),
-    );
-    if (!suffix) break;
-    text = text.replace(new RegExp(`(?:,\\s*|\\s+)${suffix}$`), "").trim();
-  }
-  return text;
-}
-
-export function cityLabel(travelFrom: string | null | undefined) {
-  const city = normalizeCity(travelFrom);
-  if (!city) return "Unknown";
-  return city.replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
-}
-
-export function amountBucket(amount: number) {
-  return (
-    AMOUNT_BUCKETS.find((bucket) => amount >= bucket.min && amount <= bucket.max)?.label ??
-    AMOUNT_BUCKETS[AMOUNT_BUCKETS.length - 1].label
-  );
-}
-
-export function cad(amount: number) {
-  return `$${amount.toLocaleString("en-CA")}`;
-}
 
 function num(value: unknown) {
   return Number(value ?? 0);
@@ -283,8 +94,8 @@ export type TravelRow = {
   userId: string;
   name: string;
   travelFrom: string | null;
-  city: string;
-  region: TravelRegion;
+  place: Place | null;
+  band: DistanceBand;
   requested: number;
   decision: "approved" | "rejected" | null;
   approvedAmount: number | null;
@@ -323,57 +134,98 @@ export async function getTravelRows(): Promise<TravelRow[]> {
     .where(eligible)
     .orderBy(asc(hackerApplications.updatedAt), asc(hackerApplications.userId));
 
-  return rows.map((row) => ({
-    userId: row.userId,
-    name: personName(row),
-    travelFrom: row.travelFrom,
-    city: cityLabel(row.travelFrom),
-    region: regionOf(row.country, row.travelFrom),
-    requested: row.travelAmount ?? 0,
-    decision: asDecision(row.travelDecision),
-    approvedAmount: row.travelApprovedAmount,
-    applicationStatus: row.applicationStatus,
-    teamId: row.teamId,
-    teamName: row.teamName,
-    rsvp: flagged(row.hasRsvp),
-    checkedIn: flagged(row.hasCheckIn),
-  }));
-}
+  const queries = rows.map((row) => travelQuery(row.travelFrom, row.country));
+  const places = await geocodeMany(queries);
 
-export function regionTotals(rows: TravelRow[]) {
-  return TRAVEL_REGIONS.map((region) => {
-    const matching = rows.filter((row) => row.region === region);
+  return rows.map((row, index) => {
+    const query = queries[index];
+    const place = query ? places.get(query) ?? null : null;
     return {
-      region,
-      count: matching.length,
-      total: matching.reduce((sum, row) => sum + row.requested, 0),
+      userId: row.userId,
+      name: personName(row),
+      travelFrom: row.travelFrom,
+      place,
+      band: bandOf(place?.km ?? null),
+      requested: row.travelAmount ?? 0,
+      decision: asDecision(row.travelDecision),
+      approvedAmount: row.travelApprovedAmount,
+      applicationStatus: row.applicationStatus,
+      teamId: row.teamId,
+      teamName: row.teamName,
+      rsvp: flagged(row.hasRsvp),
+      checkedIn: flagged(row.hasCheckIn),
     };
   });
+}
+
+function sumRequested(rows: TravelRow[]) {
+  return rows.reduce((sum, row) => sum + row.requested, 0);
+}
+
+function sumApproved(rows: TravelRow[]) {
+  return rows.reduce(
+    (sum, row) => sum + (row.decision === "approved" ? row.approvedAmount ?? 0 : 0),
+    0,
+  );
+}
+
+export function bandTotals(rows: TravelRow[]) {
+  return DISTANCE_BANDS.map((band) => {
+    const matching = rows.filter((row) => row.band === band.label);
+    return { band: band.label, count: matching.length, total: sumRequested(matching) };
+  }).filter((band) => band.band !== "Unknown" || band.count > 0);
 }
 
 export function bucketTotals(rows: TravelRow[]) {
   return AMOUNT_BUCKETS.map((bucket) => {
     const matching = rows.filter((row) => amountBucket(row.requested) === bucket.label);
-    return {
-      label: bucket.label,
-      count: matching.length,
-      total: matching.reduce((sum, row) => sum + row.requested, 0),
-    };
+    return { label: bucket.label, count: matching.length, total: sumRequested(matching) };
   });
 }
 
-export function topCities(rows: TravelRow[], limit = 10) {
-  const totals = new Map<string, { count: number; total: number }>();
-  for (const row of rows) {
-    const current = totals.get(row.city) ?? { count: 0, total: 0 };
-    current.count += 1;
-    current.total += row.requested;
-    totals.set(row.city, current);
-  }
-  return [...totals.entries()]
-    .map(([city, value]) => ({ city, ...value }))
-    .sort((a, b) => b.total - a.total || b.count - a.count)
-    .slice(0, limit);
+export type PlaceGroup = {
+  key: string;
+  label: string;
+  km: number | null;
+  rows: TravelRow[];
+  asked: number;
+  approved: number;
+};
+
+export type BandGroup = {
+  band: (typeof DISTANCE_BANDS)[number];
+  places: PlaceGroup[];
+  people: number;
+  asked: number;
+  approved: number;
+};
+
+export function placesByBand(rows: TravelRow[]): BandGroup[] {
+  return DISTANCE_BANDS.map((band) => {
+    const inBand = rows.filter((row) => row.band === band.label);
+    const byPlace = new Map<string, TravelRow[]>();
+    for (const row of inBand) {
+      const key = row.place?.label ?? (row.travelFrom?.trim() || "No answer");
+      byPlace.set(key, [...(byPlace.get(key) ?? []), row]);
+    }
+    const places = [...byPlace.entries()]
+      .map(([key, group]) => ({
+        key,
+        label: key,
+        km: group[0].place?.km ?? null,
+        rows: group,
+        asked: sumRequested(group),
+        approved: sumApproved(group),
+      }))
+      .sort((a, b) => (a.km ?? 0) - (b.km ?? 0) || b.rows.length - a.rows.length);
+    return {
+      band,
+      places,
+      people: inBand.length,
+      asked: sumRequested(inBand),
+      approved: sumApproved(inBand),
+    };
+  }).filter((group) => group.people > 0);
 }
 
 export type TravelCaseMember = {
@@ -387,6 +239,7 @@ export type TravelCaseMember = {
   decision: "approved" | "rejected" | null;
   approvedAmount: number | null;
   requestedChanged: boolean;
+  place: Place | null;
 };
 
 export type TravelCase = {
@@ -419,7 +272,21 @@ function toMember(
     approvedAmount,
     requestedChanged:
       decision === "approved" && approvedAmount != null && requested !== approvedAmount,
+    place: null,
   };
+}
+
+async function withPlaces(members: TravelCaseMember[]) {
+  const queries = members.map((member) =>
+    member.requestsTravel && member.application
+      ? travelQuery(member.application.travelFrom, member.application.country)
+      : null,
+  );
+  const places = await geocodeMany(queries);
+  return members.map((member, index) => {
+    const query = queries[index];
+    return { ...member, place: query ? places.get(query) ?? null : null };
+  });
 }
 
 export async function getTravelCase(
@@ -466,14 +333,14 @@ export async function getTravelCase(
       value: {
         focusUserId: focusId,
         team: null,
-        members: [
+        members: await withPlaces([
           toMember(focus, {
             userId: focusId,
             name: user?.name ?? "",
             email: user?.email ?? focus.email ?? "",
             applicationStatus: user?.applicationStatus ?? "pending",
           }),
-        ],
+        ]),
       },
     };
   }
@@ -515,41 +382,7 @@ export async function getTravelCase(
           marsAnswer: member.marsAnswer,
         })),
       },
-      members,
+      members: await withPlaces(members),
     },
   };
 }
-
-function assert(condition: boolean, message: string) {
-  if (!condition) throw new Error(`reimbursements: ${message}`);
-}
-
-function selfCheck() {
-  assert(regionOf("Canada", "london ontario") === "Ontario", "london ontario");
-  assert(regionOf("Canada", "London") === "Ontario", "London, Canada");
-  assert(regionOf("United Kingdom", "London") === "International", "London, UK");
-  assert(regionOf("Canada", "University of waterloo") === "Ontario", "waterloo");
-  assert(regionOf("Canada", "Toronto") === "GTA", "Toronto");
-  assert(regionOf("Canada", "Mississauga, ON") === "GTA", "Mississauga");
-  assert(regionOf("Canada", "Edmonton, AB") === "Other Canada", "Edmonton");
-  assert(regionOf("Canada", "Fredericton, New Brunswick") === "Other Canada", "Fredericton");
-  assert(regionOf("Canada", "Vancouver, BC") === "Other Canada", "Vancouver");
-  assert(regionOf("United States of America", "Chapel Hill, NC") === "USA", "Chapel Hill");
-  assert(regionOf("United States of America", "New York") === "USA", "New York");
-  assert(regionOf("Pakistan", "Islamabad, PK") === "International", "Islamabad");
-  assert(regionOf("Nigeria", "Kwara, Nigeria") === "International", "Kwara");
-  assert(regionOf("Canada", "") === "Other Canada", "blank Canada");
-  assert(normalizeCity("Edmonton, AB") === "edmonton", "edmonton comma");
-  assert(normalizeCity("edmonton") === "edmonton", "edmonton plain");
-  assert(normalizeCity("Edmonton Alberta") === "edmonton", "edmonton alberta");
-  assert(normalizeCity("University of waterloo") === "university of waterloo", "waterloo campus");
-  assert(normalizeCity("Islamabad, PK") === "islamabad", "islamabad");
-  assert(amountBucket(0) === "$0–50", "bucket 0");
-  assert(amountBucket(50) === "$0–50", "bucket 50");
-  assert(amountBucket(51) === "$51–100", "bucket 51");
-  assert(amountBucket(150) === "$101–150", "bucket 150");
-  assert(amountBucket(151) === "$151–200", "bucket 151");
-  assert(amountBucket(200) === "$151–200", "bucket 200");
-}
-
-selfCheck();

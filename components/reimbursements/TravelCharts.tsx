@@ -9,7 +9,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { cad } from "@/data/reimbursements";
+import { cad } from "@/lib/travel";
 
 const regionConfig = {
   total: { label: "Requested", color: "hsl(var(--chart-1))" },
@@ -19,7 +19,7 @@ const bucketConfig = {
   count: { label: "People", color: "hsl(var(--chart-2))" },
 } satisfies ChartConfig;
 
-type RegionPoint = { region: string; count: number; total: number };
+type RegionPoint = { band: string; count: number; total: number };
 type BucketPoint = { label: string; count: number; total: number };
 
 export default function TravelCharts({
@@ -33,7 +33,7 @@ export default function TravelCharts({
     <div className="grid gap-4 lg:grid-cols-2">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Where they are coming from</CardTitle>
+          <CardTitle className="text-base">Requested by distance from the venue</CardTitle>
         </CardHeader>
         <CardContent>
           <ChartContainer config={regionConfig} className="h-[260px] w-full">
@@ -41,7 +41,7 @@ export default function TravelCharts({
               <XAxis type="number" hide />
               <YAxis
                 type="category"
-                dataKey="region"
+                dataKey="band"
                 width={110}
                 tickLine={false}
                 axisLine={false}

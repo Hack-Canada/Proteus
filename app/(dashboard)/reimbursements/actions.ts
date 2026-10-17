@@ -6,7 +6,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { getCurrentUser } from "@/auth";
-import { TRAVEL_CAP } from "@/data/reimbursements";
+import { TRAVEL_CAP } from "@/lib/travel";
 import { db } from "@/lib/db";
 import { createAuditLog } from "@/lib/db/queries/audit-log";
 import { hackerApplications, teamMembers } from "@/lib/db/schema";
