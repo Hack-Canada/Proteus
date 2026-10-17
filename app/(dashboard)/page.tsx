@@ -16,7 +16,8 @@ import {
   getTopCountries,
   getTracks,
 } from "@/data/stats";
-import { cad, getReimbursementStats } from "@/data/reimbursements";
+import { getReimbursementStats } from "@/data/reimbursements";
+import { cad } from "@/lib/travel";
 import { getEventConfig, livePhase } from "@/lib/event-config";
 import type { EventConfig } from "@/lib/db/schema";
 import { isAdmin, isReviewer } from "@/lib/utils";
