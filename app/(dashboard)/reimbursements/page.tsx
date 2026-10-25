@@ -36,10 +36,31 @@ function pct(part: number, whole: number) {
 }
 
 export default async function ReimbursementsPage() {
+  // #region agent log
+  const pageStarted = Date.now();
+  // #endregion
   const user = await getCurrentUser();
+  // #region agent log
+  const authMs = Date.now() - pageStarted;
+  // #endregion
   if (!user?.id || !isAdmin(user.role)) redirect("/");
 
   const [stats, rows] = await Promise.all([getReimbursementStats(), getTravelRows()]);
+  // #region agent log
+  fetch("http://127.0.0.1:7416/ingest/d6da3325-2e0f-40ba-870a-ac5d82dcc36a", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f3da0c" },
+    body: JSON.stringify({
+      sessionId: "f3da0c",
+      runId: "post-fix-3",
+      hypothesisId: "H5",
+      location: "reimbursements/page.tsx",
+      message: "reimbursements page data ready",
+      data: { authMs, totalMs: Date.now() - pageStarted, rows: rows.length },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
   const regions = bandTotals(rows);
   const buckets = bucketTotals(rows);
   const bands = placesByBand(rows);
