@@ -1,11 +1,5 @@
-import { defineConfig } from "eslint/config";
-import nextCoreWebVitals from "eslint-config-next/core-web-vitals.js";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import nextPlugin from "@next/eslint-plugin-next";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const flat = nextPlugin.flatConfig ?? nextPlugin.default?.flatConfig;
 
-export default defineConfig([{
-    extends: [...nextCoreWebVitals],
-}]);
+export default [flat.coreWebVitals];

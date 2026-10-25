@@ -55,6 +55,9 @@ export type ReimbursementStats = {
 };
 
 export async function getReimbursementStats(): Promise<ReimbursementStats> {
+  // #region agent log
+  const statsStarted = Date.now();
+  // #endregion
   const [row] = await db
     .select({
       requested: sql<number>`COUNT(*)`,
@@ -73,6 +76,22 @@ export async function getReimbursementStats(): Promise<ReimbursementStats> {
     .from(hackerApplications)
     .innerJoin(users, eq(users.id, hackerApplications.userId))
     .where(eligible);
+
+  // #region agent log
+  fetch("http://127.0.0.1:7416/ingest/d6da3325-2e0f-40ba-870a-ac5d82dcc36a", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f3da0c" },
+    body: JSON.stringify({
+      sessionId: "f3da0c",
+      runId: "pre-fix",
+      hypothesisId: "H3",
+      location: "data/reimbursements.ts:getReimbursementStats",
+      message: "stats query finished",
+      data: { ms: Date.now() - statsStarted, requested: num(row?.requested) },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
 
   return {
     requested: num(row?.requested),
@@ -111,6 +130,9 @@ function flagged(value: unknown) {
 }
 
 export async function getTravelRows(): Promise<TravelRow[]> {
+  // #region agent log
+  const rowsStarted = Date.now();
+  // #endregion
   const rows = await db
     .select({
       userId: hackerApplications.userId,
@@ -135,7 +157,43 @@ export async function getTravelRows(): Promise<TravelRow[]> {
     .orderBy(asc(hackerApplications.updatedAt), asc(hackerApplications.userId));
 
   const queries = rows.map((row) => travelQuery(row.travelFrom, row.country));
+  // #region agent log
+  fetch("http://127.0.0.1:7416/ingest/d6da3325-2e0f-40ba-870a-ac5d82dcc36a", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f3da0c" },
+    body: JSON.stringify({
+      sessionId: "f3da0c",
+      runId: "pre-fix",
+      hypothesisId: "H3-H4",
+      location: "data/reimbursements.ts:getTravelRows",
+      message: "travel rows query finished",
+      data: {
+        dbMs: Date.now() - rowsStarted,
+        rowCount: rows.length,
+        uniqueUsers: new Set(rows.map((row) => row.userId)).size,
+        uniqueQueries: new Set(queries.filter(Boolean)).size,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  const geoStarted = Date.now();
+  // #endregion
   const places = await geocodeMany(queries);
+  // #region agent log
+  fetch("http://127.0.0.1:7416/ingest/d6da3325-2e0f-40ba-870a-ac5d82dcc36a", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "f3da0c" },
+    body: JSON.stringify({
+      sessionId: "f3da0c",
+      runId: "post-fix-3",
+      hypothesisId: "H6",
+      location: "data/reimbursements.ts:getTravelRows",
+      message: "geocode finished",
+      data: { geoMs: Date.now() - geoStarted, placed: places.size },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
 
   return rows.map((row, index) => {
     const query = queries[index];
