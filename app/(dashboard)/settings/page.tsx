@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/auth";
 import Container from "@/components/Container";
 import PageBanner from "@/components/PageBanner";
 import SettingsPanel from "@/components/settings/SettingsPanel";
+import { getEmailSwitch } from "@/lib/email-switch";
 import { getEventConfig, livePhase, toTorontoInput } from "@/lib/event-config";
 import { isAdmin } from "@/lib/utils";
 import { redirect } from "next/navigation";
@@ -17,7 +18,7 @@ export default async function SettingsPage() {
     redirect("/");
   }
 
-  const row = await getEventConfig();
+  const [row, emailSwitch] = await Promise.all([getEventConfig(), getEmailSwitch()]);
 
   return (
     <Container className="space-y-6 md:space-y-10">
@@ -27,6 +28,8 @@ export default async function SettingsPage() {
       />
       <SettingsPanel
         missing={row === "missing"}
+        emailsEnabled={emailSwitch.enabled}
+        emailsEnvEnabled={emailSwitch.envEnabled}
         config={
           row && row !== "missing"
             ? {

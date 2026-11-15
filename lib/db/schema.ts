@@ -582,3 +582,13 @@ export const eventConfig = pgTable("eventConfig", {
 
 export type EventConfig = typeof eventConfig.$inferSelect;
 export type NewEventConfig = typeof eventConfig.$inferInsert;
+
+export const portalSettings = pgTable("portalSettings", {
+  id: text("id").primaryKey(),
+  emailsEnabled: boolean("emailsEnabled").notNull().default(false),
+  updatedAt: timestamp("updatedAt")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
+export type PortalSetting = typeof portalSettings.$inferSelect;

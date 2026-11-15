@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/auth";
 import { getEventConfig, parseEventConfig } from "@/lib/event-config";
+import { saveEmailSwitch } from "@/lib/email-switch";
 import { db } from "@/lib/db";
 import { createAuditLog } from "@/lib/db/queries/audit-log";
 import { eventConfig } from "@/lib/db/schema";
@@ -74,4 +75,37 @@ export async function saveEventConfig(
   revalidatePath("/settings");
   revalidatePath("/");
   return { ok: true };
+}
+
+export type SaveEmailSwitchState =
+  | { ok: true; enabled: boolean }
+  | { ok: false; error: string }
+  | null;
+
+export async function setEmailSwitch(
+  _prev: SaveEmailSwitchState,
+  formData: FormData,
+): Promise<SaveEmailSwitchState> {
+  const user = await getCurrentUser();
+  if (!user?.id || !isAdmin(user.role)) {
+    return { ok: false, error: "Only admins can change the email switch." };
+  }
+
+  const enabled = formData.get("emailsEnabled") === "true";
+  const saved = await saveEmailSwitch(enabled);
+
+  await createAuditLog({
+    userId: user.id,
+    action: saved.existed ? "update" : "create",
+    entityType: "portalSettings",
+    entityId: "emails",
+    previousValue: { emailsEnabled: saved.previous === true },
+    newValue: { emailsEnabled: saved.enabled },
+    metadata: {
+      description: `${user.name || user.email} turned portal emails ${saved.enabled ? "on" : "off"}`,
+    },
+  });
+
+  revalidatePath("/settings");
+  return { ok: true, enabled: saved.enabled };
 }

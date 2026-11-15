@@ -9,14 +9,39 @@ import { SES } from "@aws-sdk/client-ses";
 import { render } from "@react-email/render";
 import RSVPReminder from "@/components/Emails/RSVPReminder";
 import { hackathonYear } from "@/config/site";
+import { emailsEnvEnabled } from "@/lib/email-gate";
+import { canSendEmail } from "@/lib/email-switch";
 
-const ses = new SES({
-  region: process.env.AWS_SES_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-});
+const ses = emailsEnvEnabled()
+  ? new SES({
+      region: process.env.AWS_SES_REGION,
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      },
+    })
+  : null;
+
+type SesParams = Parameters<SES["sendEmail"]>[0];
+
+async function deliver(params: SesParams) {
+  const gate = await canSendEmail();
+  if (!gate.ok || !ses) {
+    const error = gate.ok
+      ? "Emails are off. Set EMAILS_ENABLED=true in the environment. Without that, this portal cannot send email."
+      : gate.error;
+    console.error(error);
+    return { error };
+  }
+
+  try {
+    await ses.sendEmail(params);
+    return { success: true as const };
+  } catch (error) {
+    console.error("Error sending email with SES: ", error);
+    return { error: "Something went wrong. Email could not be sent." };
+  }
+}
 
 export const sendEmail = async (to: string, subject: string, body: string) => {
   const params = {
@@ -42,15 +67,9 @@ export const sendEmail = async (to: string, subject: string, body: string) => {
     },
   };
 
-  try {
-    await ses.sendEmail(params);
-
-    console.log("Email sent successfully to " + to);
-    return { success: true };
-  } catch (error) {
-    console.error("Error sending email with SES: ", error);
-    return { error: "Something went wrong. Email could not be sent." };
-  }
+  const result = await deliver(params);
+  if ("success" in result) console.log("Email sent successfully to " + to);
+  return result;
 };
 
 export const sendApplicationEmail = async (
@@ -130,13 +149,8 @@ export const sendReminderEmail = async (emails: string[]) => {
     },
   };
 
-  try {
-    const result = await ses.sendEmail(params);
-
-    console.log("Email sent!", result);
-  } catch (error) {
-    console.error("Error sending email with SES: ", error);
-  }
+  const result = await deliver(params);
+  if (result.error) console.error(result.error);
 };
 
 export const sendHackathonPrepEmail = async (
@@ -191,7 +205,8 @@ export const sendOnboardingEmail = async (
         },
       };
 
-      await ses.sendEmail(params);
+      const result = await deliver(params);
+      if (result.error) throw new Error(result.error);
       console.log(`Onboarding email sent to ${hacker.email}`);
       // Add a delay between emails to respect SES rate limits
       await new Promise((resolve) => setTimeout(resolve, 200));

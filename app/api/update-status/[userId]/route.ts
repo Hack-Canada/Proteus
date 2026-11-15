@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { hackerApplications, users } from "@/lib/db/schema";
 import { db } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { canSendEmail } from "@/lib/email-switch";
 import { sendAcceptanceEmail, sendRejectionEmail } from "@/lib/ses";
 import { createAuditLog } from "@/lib/db/queries/audit-log";
 import { isAdmin } from "@/lib/utils";
@@ -78,6 +79,9 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ userId:
       });
     }
 
+    const wantsEmail = status === "accepted" || status === "rejected";
+    const emailGate = wantsEmail ? await canSendEmail() : null;
+
     await db.transaction(async (tx) => {
       // Create audit log for the status change
       await createAuditLog(
@@ -112,7 +116,7 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ userId:
         })
         .where(eq(hackerApplications.userId, existingUser.id));
 
-      if (status === "accepted" || status === "rejected") {
+      if (wantsEmail && emailGate?.ok) {
         const sendEmail =
           status === "accepted" ? sendAcceptanceEmail : sendRejectionEmail;
 
@@ -131,7 +135,9 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ userId:
 
     return NextResponse.json({
       success: true,
-      message: `User status updated successfully. ${existingApplication.firstName} now has the status of '${status}'.`,
+      message: `User status updated successfully. ${existingApplication.firstName} now has the status of '${status}'.${
+        wantsEmail && !emailGate?.ok ? " No email was sent. Turn the email switch on in Settings, send, then turn it off." : ""
+      }`,
       data: { status },
     });
   } catch (error) {
