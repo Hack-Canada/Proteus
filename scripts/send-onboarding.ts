@@ -59,6 +59,7 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import * as schema from "../lib/db/schema";
 import { users } from "../lib/db/schema";
 import { SES } from "@aws-sdk/client-ses";
+import { emailsEnvEnabled } from "../lib/email-gate";
 
 // React + email component — imported statically so JSX transform works
 import { createElement, Suspense } from "react";
@@ -69,13 +70,15 @@ import OnboardingEmail from "../components/Emails/OnboardingEmail";
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const db = drizzle(pool, { schema });
 
-const ses = new SES({
-  region: process.env.AWS_SES_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-});
+const ses = emailsEnvEnabled()
+  ? new SES({
+      region: process.env.AWS_SES_REGION,
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      },
+    })
+  : null;
 
 // ── Render email to HTML using Bun-compatible renderToReadableStream ──────────
 async function renderEmail(name: string, userId: string): Promise<string> {
@@ -107,6 +110,11 @@ async function renderEmail(name: string, userId: string): Promise<string> {
 
 // ── Send one email via SES ────────────────────────────────────────────────────
 async function sendEmail(to: string, subject: string, body: string) {
+  const { canSendEmail } = await import("../lib/email-switch");
+  const gate = await canSendEmail();
+  if (!gate.ok || !ses) {
+    throw new Error(gate.ok ? "EMAILS_ENABLED is not set." : gate.error);
+  }
   await ses.sendEmail({
     Source: `Hack Canada <${process.env.AWS_SES_NO_REPLY_EMAIL!}>`,
     Destination: { ToAddresses: [to] },

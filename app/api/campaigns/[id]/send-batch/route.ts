@@ -10,6 +10,7 @@ import {
   getCampaignRecipientCounts,
 } from "@/lib/db/queries/campaign";
 import { createAuditLog } from "@/lib/db/queries/audit-log";
+import { canSendEmail } from "@/lib/email-switch";
 import { sendEmail } from "@/lib/ses";
 import { render } from "@react-email/render";
 import AcceptanceEmail from "@/components/Emails/AcceptanceEmail";
@@ -84,6 +85,14 @@ export async function POST(
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
         { status: 401 },
+      );
+    }
+
+    const emailGate = await canSendEmail();
+    if (!emailGate.ok) {
+      return NextResponse.json(
+        { success: false, message: emailGate.error },
+        { status: 403 },
       );
     }
 

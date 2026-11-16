@@ -5,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import EmailSwitchForm from "@/components/settings/EmailSwitchForm";
 import EventConfigForm, {
   type EventConfigFormValues,
 } from "@/components/settings/EventConfigForm";
@@ -74,22 +75,6 @@ const SETTINGS_INFO = [
     ],
   },
   {
-    title: "Email Configuration",
-    description: "Email sending is powered by AWS SES.",
-    items: [
-      {
-        label: "Email Provider",
-        value: "AWS SES",
-        location: "lib/ses/index.ts",
-      },
-      {
-        label: "From Address",
-        value: process.env.AWS_SES_NO_REPLY_EMAIL || "AWS_SES_NO_REPLY_EMAIL",
-        location: ".env.local",
-      },
-    ],
-  },
-  {
     title: "Authentication",
     description: "Auth configuration for the admin portal.",
     items: [
@@ -115,9 +100,13 @@ const SETTINGS_INFO = [
 const SettingsPanel = ({
   config,
   missing,
+  emailsEnabled,
+  emailsEnvEnabled,
 }: {
   config: EventConfigFormValues | null;
   missing: boolean;
+  emailsEnabled: boolean;
+  emailsEnvEnabled: boolean;
 }) => {
   return (
     <div className="space-y-6">
@@ -151,6 +140,20 @@ const SettingsPanel = ({
               }}
             />
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Email switch</CardTitle>
+          <CardDescription>
+            From {process.env.AWS_SES_NO_REPLY_EMAIL || "AWS_SES_NO_REPLY_EMAIL"} via
+            AWS SES. Nothing is emailed unless the environment key and this switch
+            are both on.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <EmailSwitchForm enabled={emailsEnabled} envEnabled={emailsEnvEnabled} />
         </CardContent>
       </Card>
 

@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { hackerApplications, users } from "@/lib/db/schema";
 import { db } from "@/lib/db";
 import { eq, inArray, and } from "drizzle-orm";
+import { canSendEmail } from "@/lib/email-switch";
 import { sendAcceptanceEmail, sendRejectionEmail } from "@/lib/ses";
 import { createAuditLog } from "@/lib/db/queries/audit-log";
 import { isAdmin } from "@/lib/utils";
@@ -96,14 +97,18 @@ export async function POST(
       );
     });
 
-    if (status === "accepted" || status === "rejected") {
+    const wantsEmail = status === "accepted" || status === "rejected";
+    const emailGate = wantsEmail ? await canSendEmail() : null;
+
+    if (wantsEmail && emailGate?.ok) {
       const sendEmail =
         status === "accepted" ? sendAcceptanceEmail : sendRejectionEmail;
 
       for (const user of eligibleUsers) {
         try {
-          await sendEmail(user.name.split(" ")[0], user.email);
-          successCount++;
+          const response = await sendEmail(user.name.split(" ")[0], user.email);
+          if (response.error) failCount++;
+          else successCount++;
         } catch {
           failCount++;
         }
@@ -114,7 +119,11 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: `Bulk update complete. ${successCount} updated successfully${failCount > 0 ? `, ${failCount} email(s) failed` : ""}.`,
+      message: `Bulk update complete. ${successCount} updated successfully${failCount > 0 ? `, ${failCount} email(s) failed` : ""}.${
+        wantsEmail && !emailGate?.ok
+          ? " No emails were sent. Turn the email switch on in Settings, send, then turn it off."
+          : ""
+      }`,
       data: { successCount, failCount, total: eligibleUsers.length },
     });
   } catch (error) {
